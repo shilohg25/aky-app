@@ -13,35 +13,40 @@
         <div class="aky-sign"><div class="aky-stripes"></div><div class="aky-text">AKY</div></div>
       </div>
       <h2>Sign in</h2>
-      <p class="muted">Use your assigned username and password.</p>
+      <p class="muted">Use your assigned email and password.</p>
       <div class="form-grid one-col">
         <div class="field"><label for="loginUsername">Email</label><input id="loginUsername" type="text" autocomplete="username" /></div>
         <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" /></div>
       </div>
       <button id="loginBtn" class="btn btn-primary wide-btn">Login</button>
       <div id="loginMessage" class="message"></div>
-     
     </div>
   </div>
 
   <div id="appShell" class="app-shell hidden">
     <aside class="sidebar">
       <div class="aky-brand"><div class="aky-sign"><div class="aky-stripes"></div><div class="aky-text">AKY</div></div></div>
+
       <div class="panel user-panel"><div id="currentUserInfo" class="current-user"></div></div>
+
       <div class="panel nav-panel">
         <button id="navCustomers" class="btn nav-btn active">Customers</button>
         <button id="navExecutive" class="btn nav-btn executive-access hidden">Executive View</button>
+        <button id="navNotifications" class="btn nav-btn executive-access hidden">Notifications</button>
+        <button id="navReports" class="btn nav-btn">Daily Reports</button>
         <button id="navLogs" class="btn nav-btn log-access hidden">Log History</button>
-        <button id="navUsers" class="btn nav-btn owner-only hidden">User Admin</button>
         <button id="openChangePasswordBtn" class="btn btn-light wide-btn">Change Password</button>
         <button id="logoutBtn" class="btn btn-danger wide-btn">Logout</button>
       </div>
+
       <div class="panel customer-panel">
         <div class="panel-row">
           <h3 class="panel-title">Customers</h3>
           <button id="openCustomerModalBtn" class="btn btn-primary small-btn">Add Customer</button>
         </div>
+
         <div id="customerList" class="customer-list"></div>
+
         <div class="search-box">
           <input id="customerSearch" type="text" placeholder="Search customer" />
           <button id="customerSearchBtn" class="btn btn-secondary wide-btn">Search</button>
@@ -64,11 +69,12 @@
                 <h2 id="customerTitle">Customer</h2>
                 <div id="customerMeta" class="muted"></div>
               </div>
+
               <div class="dashboard-actions">
                 <button id="createInvoiceBtn" class="btn btn-primary edit-access">Create Invoice</button>
                 <button id="makePaymentBtn" class="btn btn-secondary">Make Payment</button>
-                <button id="editCustomerBtn" class="btn btn-light edit-access hidden">Edit Customer</button>
-                <button id="deleteCustomerBtn" class="btn btn-danger edit-access hidden">Delete Customer</button>
+                <button id="createSOABtn" class="btn btn-light">Create Statement of Account</button>
+                <button id="editCustomerBtn" class="btn btn-light edit-access">Edit Customer</button>
               </div>
             </div>
             <div id="overdueAlertBox" class="alert-box hidden"></div>
@@ -81,15 +87,29 @@
             <div class="panel summary-card"><span class="summary-label">Overdue 90+ Days</span><strong id="sumOverdue">0</strong></div>
           </div>
 
-          <div class="panel"><h3 class="panel-title">Customer Contacts</h3><div id="customerContacts"></div></div>
+          <div class="panel">
+            <h3 class="panel-title">Customer Contacts</h3>
+            <div id="customerContacts"></div>
+          </div>
 
           <div class="panel">
-            <div class="table-header"><h3 class="panel-title">Invoices</h3></div>
+            <div class="table-header">
+              <h3 class="panel-title">Invoices</h3>
+            </div>
             <div class="table-wrap">
               <table class="records-table">
                 <thead>
                   <tr>
-                    <th>Invoice #</th><th>Date</th><th>PO #</th><th>Reference</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Notice</th><th class="edit-access hidden">Actions</th>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th>PO #</th>
+                    <th>Reference</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>TBV</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="invoiceTableBody"></tbody>
@@ -98,12 +118,20 @@
           </div>
 
           <div class="panel">
-            <div class="table-header"><h3 class="panel-title">Payments</h3></div>
+            <div class="table-header">
+              <h3 class="panel-title">Payments</h3>
+            </div>
             <div class="table-wrap">
               <table class="records-table">
                 <thead>
                   <tr>
-                    <th>Date</th><th>Type</th><th>Method</th><th>Details</th><th>Amount</th><th>Applied To</th><th>Created By</th><th class="edit-access hidden">Actions</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Method</th>
+                    <th>Details</th>
+                    <th>Amount</th>
+                    <th>Applied To</th>
+                    <th>Created By</th>
                   </tr>
                 </thead>
                 <tbody id="paymentTableBody"></tbody>
@@ -124,8 +152,9 @@
               <button id="clearExecFilterBtn" class="btn btn-light">Clear</button>
             </div>
           </div>
-          <p class="muted">Owner and co-owner can view this section. Co-owner can interact only here.</p>
+          <p class="muted">Owner and co-owner can view this section.</p>
         </div>
+
         <div class="summary-grid exec-grid">
           <div class="panel summary-card"><span class="summary-label">Customers</span><strong id="execCustomers">0</strong></div>
           <div class="panel summary-card"><span class="summary-label">Invoices</span><strong id="execInvoices">0</strong></div>
@@ -134,41 +163,181 @@
           <div class="panel summary-card"><span class="summary-label">Outstanding</span><strong id="execOutstanding">₱0</strong></div>
           <div class="panel summary-card"><span class="summary-label">90+ Overdue</span><strong id="execOverdue">0</strong></div>
         </div>
-        <div class="exec-layout">
-          <div class="panel"><h3 class="panel-title">Monthly Invoiced vs Collected</h3><div id="monthlyChart" class="bar-chart"></div></div>
-          <div class="panel"><h3 class="panel-title">Top Outstanding Customers</h3><div id="topCustomersChart" class="mini-bars"></div></div>
-        </div>
+
         <div class="panel">
           <h3 class="panel-title">Aging / Follow-up</h3>
           <div class="table-wrap">
-            <table class="records-table"><thead><tr><th>Customer</th><th>Invoice #</th><th>Date</th><th>Days Open</th><th>Balance</th><th>Status</th><th>Notice</th></tr></thead><tbody id="agingTableBody"></tbody></table>
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Date</th>
+                  <th>Days Open</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>TBV</th>
+                </tr>
+              </thead>
+              <tbody id="agingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="notificationsView" class="view-section hidden">
+        <div class="panel">
+          <h2 class="panel-title">Notifications</h2>
+          <p class="muted">Owner and co-owner can see 90+ day invoices and TBV requests here. Only owner can approve or deny TBV.</p>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">TBV Requests</h3>
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Date Requested</th>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Requested By</th>
+                  <th>Explanation</th>
+                  <th>Status</th>
+                  <th>Decision</th>
+                </tr>
+              </thead>
+              <tbody id="tbvTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">Invoices Over 90 Days</h3>
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Date</th>
+                  <th>Days Open</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody id="notificationsOverdueBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="reportsView" class="view-section hidden">
+        <div class="panel">
+          <div class="panel-row">
+            <h2 class="panel-title">Daily Reports</h2>
+            <div class="btn-row">
+              <button id="downloadReportBtn" class="btn btn-primary">Download CSV</button>
+              <button id="printReportBtn" class="btn btn-light">Print</button>
+            </div>
+          </div>
+          <p class="muted">All users can filter and download reports. Downloaded files can be opened on any computer with a browser or spreadsheet app.</p>
+        </div>
+
+        <div class="panel">
+          <div class="form-grid report-grid">
+            <div class="field">
+              <label for="reportCustomerFilter">Customer</label>
+              <select id="reportCustomerFilter"></select>
+            </div>
+            <div class="field">
+              <label for="reportInvoiceDateFrom">Invoice Date From</label>
+              <input id="reportInvoiceDateFrom" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportInvoiceDateTo">Invoice Date To</label>
+              <input id="reportInvoiceDateTo" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportPaidDateFrom">Paid Date From</label>
+              <input id="reportPaidDateFrom" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportPaidDateTo">Paid Date To</label>
+              <input id="reportPaidDateTo" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportStatusFilter">Invoice Status</label>
+              <select id="reportStatusFilter">
+                <option value="">All</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partially Paid">Partially Paid</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row report-actions">
+            <button id="applyReportFilterBtn" class="btn btn-primary">Apply Filters</button>
+            <button id="clearReportFilterBtn" class="btn btn-light">Clear</button>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="panel summary-card"><span class="summary-label">Invoices in Result</span><strong id="reportInvoicesCount">0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Total Invoiced</span><strong id="reportTotalInvoiced">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Total Paid</span><strong id="reportTotalPaid">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Outstanding</span><strong id="reportTotalOutstanding">₱0</strong></div>
+        </div>
+
+        <div class="panel">
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Invoice Date</th>
+                  <th>PO #</th>
+                  <th>Reference</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>Latest Paid Date</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody"></tbody>
+            </table>
           </div>
         </div>
       </section>
 
       <section id="logView" class="view-section hidden">
-        <div class="panel"><h2 class="panel-title">Log History</h2><p class="muted">Visible to owner, admin, and co-owner.</p></div>
         <div class="panel">
-          <div class="table-wrap">
-            <table class="records-table"><thead><tr><th>Date/Time</th><th>User</th><th>Role</th><th>Action</th><th>Entity</th><th>Details</th><th>Explanation</th></tr></thead><tbody id="logTableBody"></tbody></table>
-          </div>
-        </div>
-      </section>
-
-      <section id="userAdminView" class="view-section hidden">
-        <div class="panel">
-          <div class="panel-row"><h2 class="panel-title">User Administration</h2><button id="openUserModalBtn" class="btn btn-primary">Create User</button></div>
-          <p class="muted">Owner-only. Create admin, co-owner, or standard users with temporary passwords.</p>
+          <h2 class="panel-title">Log History</h2>
+          <p class="muted">Visible to owner, admin, and co-owner.</p>
         </div>
         <div class="panel">
           <div class="table-wrap">
-            <table class="records-table"><thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Temp Password</th></tr></thead><tbody id="usersTableBody"></tbody></table>
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Date/Time</th>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Details</th>
+                  <th>Explanation</th>
+                </tr>
+              </thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
           </div>
         </div>
       </section>
     </main>
   </div>
 
+  <!-- CUSTOMER MODAL -->
   <div id="customerModal" class="modal">
     <div class="modal-content">
       <div class="modal-header"><h3 id="customerModalTitle">Add Customer</h3><button id="closeCustomerModalBtn" class="icon-btn" type="button">&times;</button></div>
@@ -185,24 +354,37 @@
     </div>
   </div>
 
+  <!-- INVOICE MODAL -->
   <div id="invoiceModal" class="modal">
     <div class="modal-content large-modal">
       <div class="modal-header"><h3 id="invoiceModalTitle">Create Invoice</h3><button id="closeInvoiceModalBtn" class="icon-btn" type="button">&times;</button></div>
+
+      <div id="editNoteWrap" class="field hidden">
+        <label for="editRequiredNote">Edit Note *</label>
+        <textarea id="editRequiredNote" rows="3" placeholder="Required when editing an invoice. Explain what was changed and why."></textarea>
+      </div>
+
       <div class="form-grid two-col">
         <div class="field"><label for="invoiceNumber">Invoice Number *</label><input id="invoiceNumber" type="text" /></div>
         <div class="field"><label for="invoiceDate">Date *</label><input id="invoiceDate" type="date" /></div>
         <div class="field"><label for="poNumber">PO #</label><input id="poNumber" type="text" /></div>
         <div class="field"><label for="referenceInfo">Reference Info</label><input id="referenceInfo" type="text" /></div>
       </div>
+
       <div class="panel soft-panel">
         <div class="panel-row"><h4 class="panel-title small-title">Line Items</h4><button id="addLineBtn" class="btn btn-secondary" type="button">Add Line</button></div>
         <div class="line-items-labels"><span>Product Name</span><span>Quantity</span><span>Price</span><span>Line Total</span><span></span></div>
         <div id="lineItemsContainer"></div>
       </div>
-      <div class="modal-footer between"><div class="total-box">Total: <strong id="invoiceTotalAmount">₱0</strong></div><button id="saveInvoiceBtn" class="btn btn-primary" type="button">Save Invoice</button></div>
+
+      <div class="modal-footer between">
+        <div class="total-box">Total: <strong id="invoiceTotalAmount">₱0</strong></div>
+        <button id="saveInvoiceBtn" class="btn btn-primary" type="button">Save Invoice</button>
+      </div>
     </div>
   </div>
 
+  <!-- INVOICE VIEW -->
   <div id="invoiceViewModal" class="modal">
     <div class="modal-content large-modal">
       <div class="modal-header"><h3>Invoice Details</h3><button id="closeInvoiceViewModalBtn" class="icon-btn" type="button">&times;</button></div>
@@ -210,6 +392,7 @@
     </div>
   </div>
 
+  <!-- PAYMENT TYPE -->
   <div id="paymentTypeModal" class="modal">
     <div class="modal-content medium-modal">
       <div class="modal-header"><h3>Make Payment</h3><button id="closePaymentTypeModalBtn" class="icon-btn" type="button">&times;</button></div>
@@ -220,14 +403,22 @@
     </div>
   </div>
 
+  <!-- INVOICE SELECTION -->
   <div id="invoiceSelectionModal" class="modal">
     <div class="modal-content large-modal">
       <div class="modal-header"><h3>Pay by Invoice</h3><button id="closeInvoiceSelectionModalBtn" class="icon-btn" type="button">&times;</button></div>
       <div id="invoiceSelectionList" class="selection-list"></div>
-      <div class="modal-footer between"><div class="total-box">Selected Total: <strong id="selectedInvoicesTotal">₱0</strong></div><div class="btn-row"><button id="cancelInvoiceSelectionBtn" class="btn btn-light" type="button">Cancel</button><button id="proceedInvoiceSelectionBtn" class="btn btn-primary" type="button">Proceed</button></div></div>
+      <div class="modal-footer between">
+        <div class="total-box">Selected Total: <strong id="selectedInvoicesTotal">₱0</strong></div>
+        <div class="btn-row">
+          <button id="cancelInvoiceSelectionBtn" class="btn btn-light" type="button">Cancel</button>
+          <button id="proceedInvoiceSelectionBtn" class="btn btn-primary" type="button">Proceed</button>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- PARTIAL PAYMENT -->
   <div id="partialPaymentModal" class="modal">
     <div class="modal-content medium-modal">
       <div class="modal-header"><h3>Partial Payment</h3><button id="closePartialPaymentModalBtn" class="icon-btn" type="button">&times;</button></div>
@@ -240,11 +431,20 @@
     </div>
   </div>
 
+  <!-- PAYMENT DETAILS -->
   <div id="paymentMethodModal" class="modal">
     <div class="modal-content medium-modal">
       <div class="modal-header"><h3>Payment Details</h3><button id="closePaymentMethodModalBtn" class="icon-btn" type="button">&times;</button></div>
       <div class="form-grid one-col">
-        <div class="field"><label for="paymentMethodSelect">Payment Method *</label><select id="paymentMethodSelect"><option value="">Select</option><option value="Cash">Cash</option><option value="Cheque">Cheque</option><option value="Online">Online</option></select></div>
+        <div class="field">
+          <label for="paymentMethodSelect">Payment Method *</label>
+          <select id="paymentMethodSelect">
+            <option value="">Select</option>
+            <option value="Cash">Cash</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
         <div class="field hidden" id="chequeNumberWrap"><label for="chequeNumberInput">Cheque Number *</label><input id="chequeNumberInput" type="text" /></div>
         <div class="field hidden" id="chequeDateWrap"><label for="chequeDateInput">Cheque Date *</label><input id="chequeDateInput" type="date" /></div>
         <div class="field hidden" id="chequePostDatedWrap"><label class="checkbox-row"><input id="chequePostDatedInput" type="checkbox" /> This cheque is post-dated</label></div>
@@ -257,18 +457,7 @@
     </div>
   </div>
 
-  <div id="userModal" class="modal">
-    <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>Create User</h3><button id="closeUserModalBtn" class="icon-btn" type="button">&times;</button></div>
-      <div class="form-grid one-col">
-        <div class="field"><label for="newUsername">Username *</label><input id="newUsername" type="text" /></div>
-        <div class="field"><label for="newPassword">Temporary Password *</label><input id="newPassword" type="text" /></div>
-        <div class="field"><label for="newUserRole">Role *</label><select id="newUserRole"><option value="user">User</option><option value="admin">Admin</option><option value="co-owner">Co-Owner</option></select></div>
-      </div>
-      <div class="modal-footer"><button id="saveUserBtn" class="btn btn-primary" type="button">Create Account</button></div>
-    </div>
-  </div>
-
+  <!-- CHANGE PASSWORD -->
   <div id="changePasswordModal" class="modal">
     <div class="modal-content medium-modal">
       <div class="modal-header"><h3 id="changePasswordTitle">Change Password</h3></div>
@@ -280,7 +469,66 @@
     </div>
   </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js"></script>
+  <!-- TBV REQUEST -->
+  <div id="tbvModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header"><h3>Request TBV</h3><button id="closeTbvModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="form-grid one-col">
+        <div id="tbvInvoiceInfo" class="info-box"></div>
+        <div class="field">
+          <label for="tbvExplanationInput">Explanation *</label>
+          <textarea id="tbvExplanationInput" rows="5" placeholder="Why should this invoice be voided?"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer"><button id="saveTbvBtn" class="btn btn-primary" type="button">Save TBV Request</button></div>
+    </div>
+  </div>
+
+  <!-- TBV DECISION -->
+  <div id="tbvDecisionModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header"><h3>TBV Decision</h3><button id="closeTbvDecisionModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="form-grid one-col">
+        <div id="tbvDecisionInfo" class="info-box"></div>
+        <div class="field">
+          <label for="tbvDecisionNotesInput">Decision Notes</label>
+          <textarea id="tbvDecisionNotesInput" rows="4" placeholder="Optional note"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer between">
+        <button id="denyTbvBtn" class="btn btn-danger" type="button">Deny</button>
+        <button id="approveTbvBtn" class="btn btn-primary" type="button">Approve and Void</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOA -->
+  <div id="soaModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header"><h3>Create Statement of Account</h3><button id="closeSoaModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="form-grid one-col">
+        <div class="field">
+          <label for="soaPreparedBy">Prepared By *</label>
+          <input id="soaPreparedBy" type="text" />
+        </div>
+        <div class="field">
+          <label for="soaAsOfDate">As of Date *</label>
+          <input id="soaAsOfDate" type="date" />
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input id="soaShowPayments" type="checkbox" checked />
+            Show previous payments
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="generateSoaBtn" class="btn btn-primary" type="button">Generate SOA</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
 </body>
 </html>

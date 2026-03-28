@@ -1011,7 +1011,94 @@ async function showApp() {
     el.invoiceTotalAmount.textContent = formatPeso(total);
   }
 
-  function saveInvoice() {
+  async function saveInvoice() {
+  const customer = getSelectedCustomer();
+  if (!customer || !canEditData()) return;
+
+  const number = el.invoiceNumber.value.trim();
+  const date = el.invoiceDate.value;
+  const po = el.poNumber.value.trim();
+  const reference = el.referenceInfo.value.trim();
+
+  if (!number) return alert("Invoice number is required.");
+  if (!date) return alert("Invoice date is required.");
+
+  const items = [...el.lineItemsContainer.querySelectorAll(".line-item")]
+    .map((row) => {
+      const product = row.querySelector(".line-product").value.trim();
+      const qty = num(row.querySelector(".line-qty").value);
+      const price = num(row.querySelector(".line-price").value);
+      return { product, qty, price, total: round2(qty * price) };
+    })
+    .filter((item) => item.product || item.qty || item.price);
+
+  if (!items.length) return alert("Add at least one line item.");
+
+  const total = round2(items.reduce((sum, item) => sum + item.total, 0));
+
+  try {
+    if (editingInvoiceId) {
+      const existing = customer.invoices.find((inv) => inv.id === editingInvoiceId);
+      if (!existing) return;
+
+      const paidAmount = Number(existing.paidAmount || 0);
+      const balanceAmount = round2(Math.max(0, total - paidAmount));
+      const primaryStatus =
+        balanceAmount <= 0 ? "PAID" : balanceAmount < total ? "PARTIALLY_PAID" : "UNPAID";
+
+      const { error } = await supabaseClient
+        .from("invoices")
+        .update({
+          invoice_number: number,
+          invoice_date: date,
+          po_number: po || null,
+          reference_info: reference || null,
+          total_amount: total,
+          balance_amount: balanceAmount,
+          primary_status: primaryStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", editingInvoiceId);
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabaseClient
+        .from("invoices")
+        .insert([
+          {
+            customer_id: customer.id,
+            invoice_number: number,
+            invoice_date: date,
+            po_number: po || null,
+            reference_info: reference || null,
+            total_amount: total,
+            paid_amount: 0,
+            balance_amount: total,
+            primary_status: "UNPAID",
+            payment_notice_status: "NONE",
+            created_by: getCurrentUser().id
+          }
+        ]);
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+    }
+
+    closeInvoiceModal();
+    editingInvoiceId = null;
+    await loadInvoicesForSelectedCustomer();
+    renderCurrentCustomerDashboard();
+    alert("Invoice saved successfully.");
+  } catch (err) {
+    console.error(err);
+    alert("Invoice save failed: " + err.message);
+  }
+}
     const customer = getSelectedCustomer();
     if (!customer || !canEditData()) return;
 
@@ -1067,7 +1154,36 @@ async function showApp() {
     renderLogs();
   }
 
-  function deleteInvoice(invoiceId) {
+  async function deleteInvoice(invoiceId) {
+  if (!canEditData()) return;
+
+  const customer = getSelectedCustomer();
+  if (!customer) return;
+
+  const invoice = customer.invoices.find((inv) => inv.id === invoiceId);
+  if (!invoice) return;
+
+  if (!confirm(`Delete invoice ${invoice.number}?`)) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from("invoices")
+      .delete()
+      .eq("id", invoiceId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadInvoicesForSelectedCustomer();
+    renderCurrentCustomerDashboard();
+    alert("Invoice deleted successfully.");
+  } catch (err) {
+    console.error(err);
+    alert("Invoice delete failed: " + err.message);
+  }
+}
     if (!canEditData()) return;
     const customer = getSelectedCustomer();
     if (!customer) return;

@@ -1884,12 +1884,12 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   function closeModal(node) { node.style.display = "none"; }
 
   function formatPaymentDetails(payment) {
-  const details = payment.details || {};
-  if (payment.method === "Cash") return escapeHtml(`Deposit to: ${details.bankAccountNumber || "-"}`);
-  if (payment.method === "Online") return escapeHtml(`Ref: ${details.referenceNumber || "-"} | ${details.platformName || "-"}`);
-  if (payment.method === "Cheque") return escapeHtml(`Cheque #: ${details.chequeNumber || "-"} | Date: ${details.chequeDate || "-"}${details.isPostDated ? " | Post-Dated" : ""}`);
-  return "-";
-}
+    const details = payment.details || {};
+    if (payment.method === "Cash") return escapeHtml(`Deposit to: ${details.bankAccountNumber || "-"}`);
+    if (payment.method === "Online") return escapeHtml(`Ref: ${details.referenceNumber || "-"} | ${details.platformName || "-"}`);
+    if (payment.method === "Cheque") return escapeHtml(`Cheque #: ${details.chequeNumber || "-"} | Date: ${details.chequeDate || "-"}${details.isPostDated ? " | Post-Dated" : ""}`);
+    return "-";
+  }
 
   function statusPill(status) {
     const cls = status === "Paid" ? "status-paid" : status === "Partially Paid" ? "status-partial" : "status-unpaid";

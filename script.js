@@ -346,8 +346,9 @@ function getCurrentUser() {
   function canAccessLogs() { return hasRole("owner", "admin", "co-owner"); }
 
 async function login() {
-  alert("LOGIN CLICKED");
-  
+  try {
+    alert("LOGIN CLICKED");
+
     const email = el.loginUsername.value.trim();
     const password = el.loginPassword.value;
 
@@ -388,12 +389,11 @@ async function login() {
     }
 
     window.currentProfile = profile;
+    state.currentUserId = user.id;
+    saveState();
 
     el.loginMessage.textContent = "";
     el.loginPassword.value = "";
-
-    state.currentUserId = user.id;
-    saveState();
 
     showApp();
 

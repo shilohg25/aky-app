@@ -267,6 +267,55 @@ async function bootstrap() {
   state.currentUserId = session.user.id;
   saveState();
   showApp();
+  async function loadCustomersFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("customers")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    alert("Load customers failed: " + error.message);
+    return;
+  }
+
+  state.customers = (data || []).map((customer) => ({
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email || "",
+    contacts: [],
+    invoices: [],
+    payments: [],
+    createdAt: customer.created_at,
+    updatedAt: customer.updated_at
+  }));
+
+  renderCustomerList();
+}
+
+async function loadSelectedCustomerDetails() {
+  if (!selectedCustomerId) return;
+
+  const customer = state.customers.find((c) => c.id === selectedCustomerId);
+  if (!customer) return;
+
+  const { data: contacts, error: contactsError } = await supabaseClient
+    .from("customer_contacts")
+    .select("*")
+    .eq("customer_id", selectedCustomerId)
+    .order("created_at", { ascending: true });
+
+  if (contactsError) {
+    alert("Load contacts failed: " + contactsError.message);
+    return;
+  }
+
+  customer.contacts = (contacts || []).map((c) => ({
+    name: c.contact_name || "",
+    phone: c.phone || "",
+    email: c.email || ""
+  }));
+}
 }
 
   function loadState() {
@@ -482,17 +531,23 @@ async function saveOwnPassword() {
     el.loginMessage.textContent = "";
   }
 
-  function showApp() {
-    el.loginScreen.classList.add("hidden");
-    el.appShell.classList.remove("hidden");
-    renderCurrentUser();
-    renderCustomerList();
-    renderCurrentCustomerDashboard();
-    renderUsersTable();
-    renderLogs();
-    renderExecutiveView();
-    setView(currentView);
+async function showApp() {
+  el.loginScreen.classList.add("hidden");
+  el.appShell.classList.remove("hidden");
+
+  renderCurrentUser();
+  await loadCustomersFromSupabase();
+
+  if (selectedCustomerId) {
+    await loadSelectedCustomerDetails();
   }
+
+  renderCurrentCustomerDashboard();
+  renderUsersTable();
+  renderLogs();
+  renderExecutiveView();
+  setView(currentView);
+}
 
   function renderCurrentUser() {
     const user = getCurrentUser();
@@ -593,7 +648,132 @@ async function saveOwnPassword() {
     el.additionalContacts.appendChild(row);
   }
 
-  function saveCustomer() {
+ async function saveCustomer() {
+  if (hasRole("co-owner")) return;
+
+  const name = el.customerFormName.value.trim();
+  const phone = el.customerFormPhone.value.trim();
+  const email = el.customerFormEmail.value.trim();
+
+  if (!name) {
+    alert("Customer name is required.");
+    return;
+  }
+
+  if (!phone) {
+    alert("Phone number is required.");
+    return;
+  }
+
+  const contacts = [...el.additionalContacts.querySelectorAll(".contact-card")]
+    .map((card) => ({
+      contact_name: card.querySelector(".contact-name").value.trim(),
+      phone: card.querySelector(".contact-phone").value.trim(),
+      email: card.querySelector(".contact-email").value.trim()
+    }))
+    .filter((c) => c.contact_name || c.phone || c.email);
+
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    alert("No logged in user found.");
+    return;
+  }
+
+  try {
+    if (editingCustomerId) {
+      const { error: updateError } = await supabaseClient
+        .from("customers")
+        .update({
+          name,
+          phone,
+          email: email || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", editingCustomerId);
+
+      if (updateError) {
+        alert(updateError.message);
+        return;
+      }
+
+      const { error: deleteContactsError } = await supabaseClient
+        .from("customer_contacts")
+        .delete()
+        .eq("customer_id", editingCustomerId);
+
+      if (deleteContactsError) {
+        alert(deleteContactsError.message);
+        return;
+      }
+
+      if (contacts.length > 0) {
+        const contactRows = contacts.map((c) => ({
+          customer_id: editingCustomerId,
+          contact_name: c.contact_name || null,
+          phone: c.phone || null,
+          email: c.email || null
+        }));
+
+        const { error: insertContactsError } = await supabaseClient
+          .from("customer_contacts")
+          .insert(contactRows);
+
+        if (insertContactsError) {
+          alert(insertContactsError.message);
+          return;
+        }
+      }
+    } else {
+      const { data: newCustomer, error: insertError } = await supabaseClient
+        .from("customers")
+        .insert([
+          {
+            name,
+            phone,
+            email: email || null,
+            created_by: currentUser.id
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) {
+        alert(insertError.message);
+        return;
+      }
+
+      if (contacts.length > 0) {
+        const contactRows = contacts.map((c) => ({
+          customer_id: newCustomer.id,
+          contact_name: c.contact_name || null,
+          phone: c.phone || null,
+          email: c.email || null
+        }));
+
+        const { error: insertContactsError } = await supabaseClient
+          .from("customer_contacts")
+          .insert(contactRows);
+
+        if (insertContactsError) {
+          alert(insertContactsError.message);
+          return;
+        }
+      }
+
+      selectedCustomerId = newCustomer.id;
+    }
+
+    closeCustomerModal();
+    editingCustomerId = null;
+    await loadCustomersFromSupabase();
+    await loadSelectedCustomerDetails();
+    renderCurrentCustomerDashboard();
+    alert("Customer saved successfully.");
+  } catch (err) {
+    console.error(err);
+    alert("Customer save failed: " + err.message);
+  }
+}
     if (hasRole("co-owner")) return;
     const name = el.customerFormName.value.trim();
     const phone = el.customerFormPhone.value.trim();
@@ -665,12 +845,13 @@ async function saveOwnPassword() {
       button.type = "button";
       button.className = "customer-item" + (customer.id === selectedCustomerId ? " active" : "");
       button.textContent = customer.name;
-      button.addEventListener("click", () => {
-        selectedCustomerId = customer.id;
-        renderCustomerList();
-        renderCurrentCustomerDashboard();
-        setView("customers");
-      });
+      button.addEventListener("click", async () => {
+  selectedCustomerId = customer.id;
+  await loadSelectedCustomerDetails();
+  renderCustomerList();
+  renderCurrentCustomerDashboard();
+  setView("customers");
+});
       el.customerList.appendChild(button);
     });
   }

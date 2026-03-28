@@ -788,17 +788,61 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     el.sumOverdue.textContent = String(overdueCount);
   }
 
+  function getAllocationAmount(alloc) {
+    return Number(alloc?.allocated_amount ?? alloc?.amount ?? 0);
+  }
+
+  function getPostDatedChequeEntries(customerId = null) {
+    return state.payments
+      .filter((payment) => {
+        const details = payment.details || {};
+        if (customerId && payment.customer_id !== customerId) return false;
+        return payment.method === "Cheque" && details.isPostDated && details.chequeDate && payment.cleared !== true;
+      })
+      .map((payment) => {
+        const details = payment.details || {};
+        const customer = state.customers.find((c) => c.id === payment.customer_id);
+
+        const allocations = (payment.allocations || []).map((alloc) => {
+          const invoice = state.invoices.find((inv) => inv.id === alloc.invoice_id);
+          return {
+            invoice,
+            allocatedAmount: getAllocationAmount(alloc)
+          };
+        });
+
+        const invoiceNumbers = allocations.map((x) => x.invoice?.invoice_number || "Deleted Invoice");
+        const openBalance = allocations.reduce((sum, x) => sum + Number(x.invoice?.balance || 0), 0);
+
+        return {
+          payment,
+          details,
+          customer,
+          allocations,
+          invoiceNumbers,
+          openBalance
+        };
+      })
+      .sort((a, b) => String(a.details.chequeDate || "").localeCompare(String(b.details.chequeDate || "")));
+  }
+
   function renderAlertBox(customer) {
     const alerts = [];
-    customer.invoices.filter((x) => x.balance > 0 && getDaysOpen(x.invoice_date) > 90).forEach((x) => alerts.push(`Overdue 90+ days: ${x.invoice_number} (${formatPeso(x.balance)})`));
+
+    customer.invoices
+      .filter((x) => x.balance > 0 && getDaysOpen(x.invoice_date) > 90)
+      .forEach((x) => alerts.push(`Overdue 90+ days: ${x.invoice_number} (${formatPeso(x.balance)})`));
+
     customer.invoices.forEach((x) => {
       const tbv = state.tbvs.find((t) => t.invoice_id === x.id && t.status === "PENDING");
       if (tbv) alerts.push(`TBV pending: ${x.invoice_number}`);
     });
-    customer.payments.forEach((p) => {
-      const details = p.details || {};
-      if (p.method === "Cheque" && details.isPostDated && details.chequeDate) alerts.push(`Post-dated cheque follow-up: ${formatPeso(p.amount)} due on ${details.chequeDate}`);
-    });
+
+    getPostDatedChequeEntries(customer.id)
+      .filter((entry) => entry.openBalance > 0)
+      .forEach((entry) => {
+        alerts.push(`Post-dated cheque follow-up: ${formatPeso(entry.payment.amount)} due on ${entry.details.chequeDate}`);
+      });
 
     if (!alerts.length) {
       el.overdueAlertBox.classList.add("hidden");
@@ -1281,14 +1325,27 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const paymentDate = todayStr();
     const amount = round2(state.paymentDraft.amount);
-    const { data: payment, error: paymentError } = await supabaseClient.from("payments").insert([{ customer_id: customer.id, payment_date: paymentDate, payment_type: state.paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment", method: method, amount, details, cleared, created_by: state.currentProfile.id, created_by_name: state.currentProfile.username, created_by_role: state.currentProfile.role }]).select().single();
+    const { data: payment, error: paymentError } = await supabaseClient.from("payments").insert([{
+      customer_id: customer.id,
+      payment_date: paymentDate,
+      payment_type: state.paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment",
+      method: method,
+      amount,
+      details,
+      cleared,
+      created_by: state.currentProfile.id,
+      created_by_name: state.currentProfile.username,
+      created_by_role: state.currentProfile.role
+    }]).select().single();
+
     if (paymentError) return alert(paymentError.message);
 
     const allocRows = state.paymentDraft.allocations.map((alloc) => ({
-  payment_id: payment.id,
-  invoice_id: alloc.invoiceId,
-  allocated_amount: alloc.amount
-}));
+      payment_id: payment.id,
+      invoice_id: alloc.invoiceId,
+      allocated_amount: alloc.amount
+    }));
+
     const { error: allocError } = await supabaseClient.from("payment_allocations").insert(allocRows);
     if (allocError) return alert(allocError.message);
 
@@ -1318,7 +1375,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     customer.payments.slice().sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date))).forEach((payment) => {
       const appliedTo = payment.allocations.map((alloc) => {
         const invoice = state.invoices.find((inv) => inv.id === alloc.invoice_id);
-        return `${invoice ? invoice.invoice_number : "Deleted Invoice"} (${formatPeso(alloc.allocated_amount ?? alloc.amount ?? 0)})`;
+        return `${invoice ? invoice.invoice_number : "Deleted Invoice"} (${formatPeso(getAllocationAmount(alloc))})`;
       }).join(", ");
       const details = formatPaymentDetails(payment);
       const row = document.createElement("tr");
@@ -1371,10 +1428,52 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     });
   }
 
+  function ensurePostDatedChequesPanel() {
+    let body = document.getElementById("postDatedChequesBody");
+    if (body) return body;
+
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    panel.id = "postDatedChequesPanel";
+    panel.innerHTML = `
+      <h3 class="panel-title">Post-Dated Cheques</h3>
+      <div class="table-wrap">
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>Cheque Date</th>
+              <th>Customer</th>
+              <th>Cheque #</th>
+              <th>Amount</th>
+              <th>Applied To</th>
+              <th>Open Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="postDatedChequesBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    const overduePanel = el.notificationsOverdueBody?.closest(".panel");
+    if (overduePanel && overduePanel.parentNode === el.notificationsView) {
+      el.notificationsView.insertBefore(panel, overduePanel);
+    } else {
+      el.notificationsView.appendChild(panel);
+    }
+
+    body = panel.querySelector("#postDatedChequesBody");
+    return body;
+  }
+
   function renderNotificationsView() {
     if (!canViewNotifications()) return;
     el.tbvTableBody.innerHTML = "";
     el.notificationsOverdueBody.innerHTML = "";
+
+    const postDatedChequesBody = ensurePostDatedChequesPanel();
+    postDatedChequesBody.innerHTML = "";
+
     const tbvs = state.tbvs.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
     if (!tbvs.length) {
       el.tbvTableBody.innerHTML = `<tr><td colspan="7" class="muted">No TBV requests.</td></tr>`;
@@ -1396,6 +1495,28 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         `;
         row.querySelector(".action-decide-tbv")?.addEventListener("click", () => openTbvDecisionModal(tbv.id));
         el.tbvTableBody.appendChild(row);
+      });
+    }
+
+    const postDatedCheques = getPostDatedChequeEntries();
+    if (!postDatedCheques.length) {
+      postDatedChequesBody.innerHTML = `<tr><td colspan="7" class="muted">No post-dated cheque follow-ups.</td></tr>`;
+    } else {
+      postDatedCheques.forEach((entry) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${escapeHtml(entry.details.chequeDate || "-")}</td>
+          <td>${escapeHtml(entry.customer?.name || "-")}</td>
+          <td>${escapeHtml(entry.details.chequeNumber || "-")}</td>
+          <td>${formatPeso(entry.payment.amount)}</td>
+          <td>${escapeHtml(entry.invoiceNumbers.join(", ") || "-")}</td>
+          <td>${formatPeso(entry.openBalance)}</td>
+          <td>${entry.openBalance > 0
+            ? `<span class="notice-pill notice-pending">Invoice Outstanding</span>`
+            : `<span class="status-pill status-paid">Invoice Paid</span>`}
+          </td>
+        `;
+        postDatedChequesBody.appendChild(row);
       });
     }
 
@@ -1679,8 +1800,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       const result = await callAccountAdmin("list_users", {});
       state.accounts = Array.isArray(result?.accounts) ? result.accounts : [];
     } catch (error) {
-      console.error(error);
-      alert(error.message || "Failed to load accounts.");
+      console.error("account-admin function is missing or not deployed:", error);
+      state.accounts = [];
     }
   }
 
@@ -1869,7 +1990,17 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
   async function addLog(action, entity, details, explanation, oldData, newData) {
-    await supabaseClient.from("activity_logs").insert([{ user_id: state.currentProfile?.id || null, username: state.currentProfile?.username || null, role: state.currentProfile?.role || null, action, entity, details: details || "", explanation: explanation || "", old_data: oldData || null, new_data: newData || null }]);
+    await supabaseClient.from("activity_logs").insert([{
+      user_id: state.currentProfile?.id || null,
+      username: state.currentProfile?.username || null,
+      role: state.currentProfile?.role || null,
+      action,
+      entity,
+      details: details || "",
+      explanation: explanation || "",
+      old_data: oldData || null,
+      new_data: newData || null
+    }]);
   }
 
   async function refreshAndRenderAll() {
@@ -1943,7 +2074,12 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   function num(value) { const n = parseFloat(value); return Number.isFinite(n) ? n : 0; }
   function round2(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
   function formatPeso(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(round2(Number(value || 0))); }
-  function formatNumber(value) { const n = Number(value || 0); return Number.isInteger(n) ? new Intl.NumberFormat("en-PH").format(n) : new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
+  function formatNumber(value) {
+    const n = Number(value || 0);
+    return Number.isInteger(n)
+      ? new Intl.NumberFormat("en-PH").format(n)
+      : new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  }
   function getDaysOpen(dateString) { return Math.max(0, Math.floor((Date.now() - new Date(dateString + "T00:00:00").getTime()) / 86400000)); }
   function formatDateTime(iso) { return new Date(iso).toLocaleString(); }
   function capitalizeRole(str) { return String(str || "").split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("-"); }

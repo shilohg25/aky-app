@@ -312,7 +312,50 @@ showApp();
       alert("Load contacts failed: " + contactsError.message);
       return;
     }
+async function loadInvoicesForSelectedCustomer() {
+  if (!selectedCustomerId) return;
 
+  const customer = state.customers.find((c) => c.id === selectedCustomerId);
+  if (!customer) return;
+
+  const { data, error } = await supabaseClient
+    .from("invoices")
+    .select("*")
+    .eq("customer_id", selectedCustomerId)
+    .order("invoice_date", { ascending: false });
+
+  if (error) {
+    alert("Load invoices failed: " + error.message);
+    return;
+  }
+
+  customer.invoices = (data || []).map((invoice) => ({
+    id: invoice.id,
+    number: invoice.invoice_number,
+    date: invoice.invoice_date,
+    po: invoice.po_number || "",
+    reference: invoice.reference_info || "",
+    items: [],
+    total: Number(invoice.total_amount || 0),
+    paidAmount: Number(invoice.paid_amount || 0),
+    balance: Number(invoice.balance_amount || 0),
+    status:
+      invoice.primary_status === "PAID"
+        ? "Paid"
+        : invoice.primary_status === "PARTIALLY_PAID"
+        ? "Partially Paid"
+        : "Unpaid",
+    notice:
+      invoice.payment_notice_status === "POST_DATED"
+        ? "Post-Dated Cheque"
+        : invoice.payment_notice_status === "PENDING_CHEQUE_CLEARANCE"
+        ? "Pending Cheque Clearance"
+        : "None",
+    chequeFollowUpDate: "",
+    createdAt: invoice.created_at,
+    updatedAt: invoice.updated_at
+  }));
+}
     customer.contacts = (contacts || []).map((c) => ({
       name: c.contact_name || "",
       phone: c.phone || "",
@@ -771,23 +814,7 @@ async function showApp() {
     editingCustomerId = null;
     await loadCustomersFromSupabase();
     await loadSelectedCustomerDetails();
-    async function loadSelectedCustomerDetails() {
-  if (!selectedCustomerId) return;
-
-  const customer = state.customers.find((c) => c.id === selectedCustomerId);
-  if (!customer) return;
-
-  const { data: contacts, error: contactsError } = await supabaseClient
-    .from("customer_contacts")
-    .select("*")
-    .eq("customer_id", selectedCustomerId)
-    .order("created_at", { ascending: true });
-
-  if (contactsError) {
-    alert("Load contacts failed: " + contactsError.message);
-    return;
-  }
-
+  
   customer.contacts = (contacts || []).map((c) => ({
     name: c.contact_name || "",
     phone: c.phone || "",

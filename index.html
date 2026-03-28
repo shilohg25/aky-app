@@ -34,7 +34,7 @@
 
       <div class="login-help">
         <strong>Role summary</strong><br />
-        Owner = full control<br />
+        Owner = full control + account management<br />
         Co-Owner = full visibility, no edits<br />
         Admin = create/edit operational data, no delete, note required for edits<br />
         User = basic access, data entry, reports, and statement of account
@@ -61,6 +61,7 @@
         <button id="navNotifications" class="btn nav-btn notification-access hidden">Notifications</button>
         <button id="navReports" class="btn nav-btn">Daily Reports</button>
         <button id="navLogs" class="btn nav-btn log-access hidden">Log History</button>
+        <button id="navAccounts" class="btn nav-btn owner-access hidden">Accounts</button>
         <button id="openChangePasswordBtn" class="btn btn-light wide-btn">Change Password</button>
         <button id="logoutBtn" class="btn btn-danger wide-btn">Logout</button>
       </div>
@@ -358,6 +359,63 @@
                 </tr>
               </thead>
               <tbody id="logTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="accountsView" class="view-section hidden">
+        <div class="panel">
+          <div class="panel-row">
+            <div>
+              <h2 class="panel-title">Accounts</h2>
+              <p class="muted">Owner only. Create users, assign roles, reset passwords, update profile info, and delete accounts.</p>
+            </div>
+            <div class="btn-row">
+              <button id="refreshAccountsBtn" class="btn btn-light">Refresh</button>
+              <button id="openAccountModalBtn" class="btn btn-primary">Create Account</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="form-grid report-grid">
+            <div class="field">
+              <label for="accountSearch">Search account</label>
+              <input id="accountSearch" type="text" placeholder="Name, email, or role" />
+            </div>
+            <div class="field">
+              <label for="accountRoleFilter">Role</label>
+              <select id="accountRoleFilter">
+                <option value="">All Roles</option>
+                <option value="owner">Owner</option>
+                <option value="co-owner">Co-Owner</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button id="applyAccountFilterBtn" class="btn btn-primary wide-btn">Apply Filters</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Must Change Password</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="accountsTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -671,6 +729,75 @@
       </div>
       <div class="modal-footer">
         <button id="generateSoaBtn" class="btn btn-primary" type="button">Generate SOA</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="accountModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3 id="accountModalTitle">Create Account</h3>
+        <button id="closeAccountModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+      <div class="form-grid one-col">
+        <div class="field">
+          <label for="accountNameInput">Full Name / Username *</label>
+          <input id="accountNameInput" type="text" />
+        </div>
+        <div class="field">
+          <label for="accountEmailInput">Email *</label>
+          <input id="accountEmailInput" type="email" />
+        </div>
+        <div class="field">
+          <label for="accountRoleInput">Role *</label>
+          <select id="accountRoleInput">
+            <option value="owner">Owner</option>
+            <option value="co-owner">Co-Owner</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+        <div class="field" id="accountPasswordWrap">
+          <label for="accountPasswordInput">Temporary Password *</label>
+          <input id="accountPasswordInput" type="password" />
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input id="accountMustChangePasswordInput" type="checkbox" checked />
+            Force password change on next login
+          </label>
+        </div>
+        <div class="info-box" id="accountModalHelpBox">
+          Owner creates the account and assigns the temporary password. The user changes it after first login.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveAccountBtn" class="btn btn-primary" type="button">Save Account</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resetPasswordModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3>Reset Password</h3>
+        <button id="closeResetPasswordModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+      <div class="form-grid one-col">
+        <div id="resetPasswordInfo" class="info-box"></div>
+        <div class="field">
+          <label for="resetPasswordInput">New Temporary Password *</label>
+          <input id="resetPasswordInput" type="password" />
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input id="resetMustChangePasswordInput" type="checkbox" checked />
+            Force password change on next login
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveResetPasswordBtn" class="btn btn-primary" type="button">Reset Password</button>
       </div>
     </div>
   </div>

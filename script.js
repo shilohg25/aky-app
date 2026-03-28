@@ -309,15 +309,42 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   function canAccessExecutive() { return hasRole("owner", "co-owner"); }
   function canAccessLogs() { return hasRole("owner", "admin", "co-owner"); }
 
-  function login() {
-    const username = el.loginUsername.value.trim();
-    const password = el.loginPassword.value;
-    const user = state.users.find((u) => u.active && u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+  async function login() {
+  const email = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
 
-    if (!user) {
-      el.loginMessage.textContent = "Invalid username or password.";
-      return;
-    }
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  const user = data.user;
+
+  const { data: profile, error: profileError } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    alert("Profile not found.");
+    return;
+  }
+
+  window.currentProfile = profile;
+
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appShell").classList.remove("hidden");
+
+  if (profile.must_change_password) {
+    document.getElementById("changePasswordModal").style.display = "flex";
+  }
+}
 
     state.currentUserId = user.id;
     saveState();

@@ -3,7 +3,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_lnGONrjUkuM00sgdNTS7aQ_lSxolPAd";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 (function () {
-(function () {
   "use strict";
 
   const STORAGE_KEY = "aky_app_v5";
@@ -342,45 +341,16 @@ async function login() {
 
   el.loginMessage.textContent = "";
   el.loginPassword.value = "";
-  el.loginScreen.classList.add("hidden");
-  el.appShell.classList.remove("hidden");
-});
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
+  state.currentUserId = user.id;
+  saveState();
 
-  const user = data.user;
-
-  const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError || !profile) {
-    alert("Profile not found.");
-    return;
-  }
-
-  window.currentProfile = profile;
-
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("appShell").classList.remove("hidden");
+  showApp();
 
   if (profile.must_change_password) {
-    document.getElementById("changePasswordModal").style.display = "flex";
+    openChangePasswordModal(true);
   }
 }
-
-    state.currentUserId = user.id;
-    saveState();
-    el.loginMessage.textContent = "";
-    el.loginPassword.value = "";
-    showApp();
-    if (user.tempPassword) openChangePasswordModal(true);
-  }
 
   function logout() {
     state.currentUserId = null;

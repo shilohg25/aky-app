@@ -797,7 +797,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     });
     customer.payments.forEach((p) => {
       const details = p.details || {};
-      if (p.payment_method === "Cheque" && details.isPostDated && details.chequeDate) alerts.push(`Post-dated cheque follow-up: ${formatPeso(p.amount)} due on ${details.chequeDate}`);
+      if (p.method === "Cheque" && details.isPostDated && details.chequeDate) alerts.push(`Post-dated cheque follow-up: ${formatPeso(p.amount)} due on ${details.chequeDate}`);
     });
 
     if (!alerts.length) {
@@ -1298,7 +1298,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       if (error) return alert(error.message);
     }
 
-    await addLog("Create", "Payment", `${payment.payment_type} - ${payment.payment_method} - ${formatPeso(amount)}`, "", null, payment);
+    await addLog("Create", "Payment", `${payment.payment_type} - ${payment.method} - ${formatPeso(amount)}`, "", null, payment);
     state.paymentDraft = null;
     closeModal(el.paymentMethodModal);
     await refreshAndRenderAll();
@@ -1321,7 +1321,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       row.innerHTML = `
           <td>${escapeHtml(payment.payment_date)}</td>
           <td>${escapeHtml(payment.payment_type)}</td>
-          <td>${escapeHtml(payment.payment_method)}</td>
+          <td>${escapeHtml(payment.method)}</td>
           <td>${details}</td>
           <td>${formatPeso(payment.amount)}</td>
           <td>${escapeHtml(appliedTo || "-")}</td>

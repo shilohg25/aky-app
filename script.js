@@ -346,7 +346,8 @@ function getCurrentUser() {
   function canAccessLogs() { return hasRole("owner", "admin", "co-owner"); }
 
 async function login() {
-  try {
+  alert("LOGIN CLICKED");
+  
     const email = el.loginUsername.value.trim();
     const password = el.loginPassword.value;
 

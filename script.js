@@ -61,24 +61,24 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       manageAccounts: false,
       noteRequiredOnEdit: true
     },
-    user: {
-      viewAllData: true,
-      createCustomer: true,
-      editCustomer: false,
-      deleteCustomer: false,
-      createInvoice: true,
-      editInvoice: false,
-      createPayment: true,
-      requestTbv: true,
-      approveTbv: false,
-      viewExecutive: false,
-      viewNotifications: false,
-      viewLogs: false,
-      downloadReports: true,
-      generateSoa: true,
-      manageAccounts: false,
-      noteRequiredOnEdit: false
-    }
+   user: {
+  viewAllData: true,
+  createCustomer: true,
+  editCustomer: false,
+  deleteCustomer: false,
+  createInvoice: true,
+  editInvoice: false,
+  createPayment: true,
+  requestTbv: false,
+  approveTbv: false,
+  viewExecutive: false,
+  viewNotifications: false,
+  viewLogs: false,
+  downloadReports: true,
+  generateSoa: true,
+  manageAccounts: false,
+  noteRequiredOnEdit: false
+}
   };
 
   const state = {

@@ -20,7 +20,55 @@ alert("SCRIPT LOADED");
   const el = mapElements();
   bindEvents();
   bootstrap();
+async function loadCustomersFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from("customers")
+    .select("*")
+    .order("name", { ascending: true });
 
+  if (error) {
+    alert("Load customers failed: " + error.message);
+    return;
+  }
+
+  state.customers = (data || []).map((customer) => ({
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email || "",
+    contacts: [],
+    invoices: [],
+    payments: [],
+    createdAt: customer.created_at,
+    updatedAt: customer.updated_at
+  }));
+
+  renderCustomerList();
+}
+
+async function loadSelectedCustomerDetails() {
+  if (!selectedCustomerId) return;
+
+  const customer = state.customers.find((c) => c.id === selectedCustomerId);
+  if (!customer) return;
+
+  const { data: contacts, error: contactsError } = await supabaseClient
+    .from("customer_contacts")
+    .select("*")
+    .eq("customer_id", selectedCustomerId)
+    .order("created_at", { ascending: true });
+
+  if (contactsError) {
+    alert("Load contacts failed: " + contactsError.message);
+    return;
+  }
+
+  customer.contacts = (contacts || []).map((c) => ({
+    name: c.contact_name || "",
+    phone: c.phone || "",
+    email: c.email || ""
+  }));
+}
   function mapElements() {
     return {
       loginScreen: byId("loginScreen"),
@@ -267,6 +315,7 @@ async function bootstrap() {
   state.currentUserId = session.user.id;
   saveState();
   showApp();
+}
   async function loadCustomersFromSupabase() {
   const { data, error } = await supabaseClient
     .from("customers")
@@ -774,46 +823,6 @@ async function showApp() {
     alert("Customer save failed: " + err.message);
   }
 }
-    if (hasRole("co-owner")) return;
-    const name = el.customerFormName.value.trim();
-    const phone = el.customerFormPhone.value.trim();
-    const email = el.customerFormEmail.value.trim();
-    if (!name) return alert("Customer name is required.");
-    if (!phone) return alert("Phone number is required.");
-
-    const contacts = [...el.additionalContacts.querySelectorAll(".contact-card")].map((card) => ({
-      name: card.querySelector(".contact-name").value.trim(),
-      phone: card.querySelector(".contact-phone").value.trim(),
-      email: card.querySelector(".contact-email").value.trim()
-    })).filter((c) => c.name || c.phone || c.email);
-
-    if (editingCustomerId) {
-      const customer = state.customers.find((c) => c.id === editingCustomerId);
-      if (!customer) return;
-      const reason = requireExplanationIfNeeded("edit this customer");
-      if (reason === null) return;
-      const before = clone(customer);
-      customer.name = name;
-      customer.phone = phone;
-      customer.email = email;
-      customer.contacts = contacts;
-      customer.updatedAt = nowIso();
-      logAction("Edit", "Customer", customer.name, reason, before, customer);
-    } else {
-      const customer = { id: uid(), name, phone, email, contacts, invoices: [], payments: [], createdAt: nowIso(), updatedAt: nowIso() };
-      state.customers.push(customer);
-      selectedCustomerId = customer.id;
-      logAction("Create", "Customer", customer.name, "", null, customer);
-    }
-
-    saveState();
-    closeCustomerModal();
-    renderCustomerList();
-    renderCurrentCustomerDashboard();
-    renderExecutiveView();
-    renderLogs();
-  }
-
   function deleteCustomer() {
     if (!canEditData()) return;
     const customer = getSelectedCustomer();

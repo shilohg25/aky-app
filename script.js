@@ -1284,7 +1284,11 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: payment, error: paymentError } = await supabaseClient.from("payments").insert([{ customer_id: customer.id, payment_date: paymentDate, payment_type: state.paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment", method: method, amount, details, cleared, created_by: state.currentProfile.id, created_by_name: state.currentProfile.username, created_by_role: state.currentProfile.role }]).select().single();
     if (paymentError) return alert(paymentError.message);
 
-    const allocRows = state.paymentDraft.allocations.map((alloc) => ({ payment_id: payment.id, invoice_id: alloc.invoiceId, amount: alloc.amount }));
+    const allocRows = state.paymentDraft.allocations.map((alloc) => ({
+  payment_id: payment.id,
+  invoice_id: alloc.invoiceId,
+  allocated_amount: alloc.amount
+}));
     const { error: allocError } = await supabaseClient.from("payment_allocations").insert(allocRows);
     if (allocError) return alert(allocError.message);
 

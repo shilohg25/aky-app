@@ -1634,7 +1634,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       <table><thead><tr><th>Invoice Date</th><th>Invoice #</th><th>PO #</th><th>Reference</th><th>Total Amount</th><th>Paid</th><th>Outstanding</th><th>Status</th></tr></thead><tbody>
       ${outstandingInvoices.length ? outstandingInvoices.map((i) => `<tr><td>${escapeHtml(i.invoice_date)}</td><td>${escapeHtml(i.invoice_number)}</td><td>${escapeHtml(i.po_number || "-")}</td><td>${escapeHtml(i.reference_info || "-")}</td><td>${formatPeso(i.total)}</td><td>${formatPeso(i.paidAmount)}</td><td>${formatPeso(i.balance)}</td><td>${escapeHtml(i.status)}</td></tr>`).join("") : `<tr><td colspan="8">No outstanding invoices.</td></tr>`}
       </tbody></table>
-      ${showPayments ? `<h3>Previous Payments</h3><table><thead><tr><th>Payment Date</th><th>Type</th><th>Method</th><th>Amount</th><th>Details</th></tr></thead><tbody>${previousPayments.length ? previousPayments.map((p) => `<tr><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.payment_type)}</td><td>${escapeHtml(p.payment_method)}</td><td>${formatPeso(p.amount)}</td><td>${formatPaymentDetails(p)}</td></tr>`).join("") : `<tr><td colspan="5">No previous payments found.</td></tr>`}</tbody></table>` : ""}
+      ${showPayments ? `<h3>Previous Payments</h3><table><thead><tr><th>Payment Date</th><th>Type</th><th>Method</th><th>Amount</th><th>Details</th></tr></thead><tbody>${previousPayments.length ? previousPayments.map((p) => `<tr><td>${escapeHtml(p.payment_date)}</td><td>${escapeHtml(p.payment_type)}</td><td>${escapeHtml(p.method)}</td><td>${formatPeso(p.amount)}</td><td>${formatPaymentDetails(p)}</td></tr>`).join("") : `<tr><td colspan="5">No previous payments found.</td></tr>`}</tbody></table>` : ""}
       <div class="total">TOTAL OUTSTANDING: ${formatPeso(totalOutstanding)}</div>
       <div class="signatures"><div class="sigbox"><div><strong>Prepared by:</strong> ${escapeHtml(preparedBy)}</div></div><div class="sigbox"><div class="line">Received by:</div></div></div>
       <script>window.onload = () => window.print();<\/script></body></html>`;
@@ -1884,12 +1884,12 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   function closeModal(node) { node.style.display = "none"; }
 
   function formatPaymentDetails(payment) {
-    const details = payment.details || {};
-    if (payment.payment_method === "Cash") return escapeHtml(`Deposit to: ${details.bankAccountNumber || "-"}`);
-    if (payment.payment_method === "Online") return escapeHtml(`Ref: ${details.referenceNumber || "-"} | ${details.platformName || "-"}`);
-    if (payment.payment_method === "Cheque") return escapeHtml(`Cheque #: ${details.chequeNumber || "-"} | Date: ${details.chequeDate || "-"}${details.isPostDated ? " | Post-Dated" : ""}`);
-    return "-";
-  }
+  const details = payment.details || {};
+  if (payment.method === "Cash") return escapeHtml(`Deposit to: ${details.bankAccountNumber || "-"}`);
+  if (payment.method === "Online") return escapeHtml(`Ref: ${details.referenceNumber || "-"} | ${details.platformName || "-"}`);
+  if (payment.method === "Cheque") return escapeHtml(`Cheque #: ${details.chequeNumber || "-"} | Date: ${details.chequeDate || "-"}${details.isPostDated ? " | Post-Dated" : ""}`);
+  return "-";
+}
 
   function statusPill(status) {
     const cls = status === "Paid" ? "status-paid" : status === "Partially Paid" ? "status-partial" : "status-unpaid";

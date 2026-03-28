@@ -346,47 +346,64 @@ function getCurrentUser() {
   function canAccessLogs() { return hasRole("owner", "admin", "co-owner"); }
 
 async function login() {
-  const email = el.loginUsername.value.trim();
-  const password = el.loginPassword.value;
+  try {
+    const email = el.loginUsername.value.trim();
+    const password = el.loginPassword.value;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+    if (!email || !password) {
+      alert("Please enter your email and password.");
+      return;
+    }
 
-  if (error) {
-    el.loginMessage.textContent = error.message;
-    return;
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      el.loginMessage.textContent = error.message;
+      alert("LOGIN ERROR: " + error.message);
+      return;
+    }
+
+    const user = data.user;
+
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      el.loginMessage.textContent = profileError.message;
+      alert("PROFILE ERROR: " + profileError.message);
+      return;
+    }
+
+    if (!profile) {
+      el.loginMessage.textContent = "Profile not found.";
+      alert("PROFILE ERROR: Profile not found.");
+      return;
+    }
+
+    window.currentProfile = profile;
+
+    el.loginMessage.textContent = "";
+    el.loginPassword.value = "";
+
+    state.currentUserId = user.id;
+    saveState();
+
+    showApp();
+
+    if (profile.must_change_password) {
+      openChangePasswordModal(true);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("UNEXPECTED ERROR: " + err.message);
   }
-
-  const user = data.user;
-
-  const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError || !profile) {
-    el.loginMessage.textContent = "Profile not found.";
-    return;
-  }
-
-window.currentProfile = profile;
-
-el.loginMessage.textContent = "";
-el.loginPassword.value = "";
-
-state.currentUserId = user.id;
-saveState();
-
-showApp();
-
-if (profile.must_change_password) {
-  openChangePasswordModal(true);
 }
-}
-
 async function logout() {
   await supabaseClient.auth.signOut();
   window.currentProfile = null;

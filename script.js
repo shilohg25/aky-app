@@ -2,26 +2,34 @@ const SUPABASE_URL = "https://pnadtkjdybaalnaqotiu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_lnGONrjUkuM00sgdNTS7aQ_lSxolPAd";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-alert("SCRIPT LOADED");
-
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "aky_app_v5";
-
-  let state = loadState();
-  let currentView = "customers";
-  let selectedCustomerId = null;
-  let customerSearchTerm = "";
-  let editingCustomerId = null;
-  let editingInvoiceId = null;
-  let paymentDraft = null;
+  const state = {
+    currentView: "customers",
+    currentProfile: null,
+    customers: [],
+    contacts: [],
+    invoices: [],
+    invoiceItems: [],
+    payments: [],
+    allocations: [],
+    logs: [],
+    tbvs: [],
+    selectedCustomerId: null,
+    editingCustomerId: null,
+    editingInvoiceId: null,
+    paymentDraft: null,
+    selectedInvoiceForTbv: null,
+    selectedTbvForDecision: null
+  };
 
   const el = mapElements();
   bindEvents();
   bootstrap();
 
   function mapElements() {
+    const byId = (id) => document.getElementById(id);
     return {
       loginScreen: byId("loginScreen"),
       appShell: byId("appShell"),
@@ -30,30 +38,27 @@ alert("SCRIPT LOADED");
       loginBtn: byId("loginBtn"),
       loginMessage: byId("loginMessage"),
 
-      changePasswordModal: byId("changePasswordModal"),
-      changePasswordTitle: byId("changePasswordTitle"),
-      openChangePasswordBtn: byId("openChangePasswordBtn"),
-      newOwnPassword: byId("newOwnPassword"),
-      confirmOwnPassword: byId("confirmOwnPassword"),
-      saveOwnPasswordBtn: byId("saveOwnPasswordBtn"),
-
       currentUserInfo: byId("currentUserInfo"),
+      openChangePasswordBtn: byId("openChangePasswordBtn"),
+      logoutBtn: byId("logoutBtn"),
+
       navCustomers: byId("navCustomers"),
       navExecutive: byId("navExecutive"),
+      navNotifications: byId("navNotifications"),
+      navReports: byId("navReports"),
       navLogs: byId("navLogs"),
-      navUsers: byId("navUsers"),
-      logoutBtn: byId("logoutBtn"),
 
       customersView: byId("customersView"),
       executiveView: byId("executiveView"),
+      notificationsView: byId("notificationsView"),
+      reportsView: byId("reportsView"),
       logView: byId("logView"),
-      userAdminView: byId("userAdminView"),
 
-      openCustomerModalBtn: byId("openCustomerModalBtn"),
       customerList: byId("customerList"),
       customerSearch: byId("customerSearch"),
       customerSearchBtn: byId("customerSearchBtn"),
       customerClearSearchBtn: byId("customerClearSearchBtn"),
+      openCustomerModalBtn: byId("openCustomerModalBtn"),
 
       welcomePanel: byId("welcomePanel"),
       customerDashboard: byId("customerDashboard"),
@@ -63,8 +68,8 @@ alert("SCRIPT LOADED");
       overdueAlertBox: byId("overdueAlertBox"),
       createInvoiceBtn: byId("createInvoiceBtn"),
       makePaymentBtn: byId("makePaymentBtn"),
+      createSOABtn: byId("createSOABtn"),
       editCustomerBtn: byId("editCustomerBtn"),
-      deleteCustomerBtn: byId("deleteCustomerBtn"),
 
       sumInvoiced: byId("sumInvoiced"),
       sumCollected: byId("sumCollected"),
@@ -87,6 +92,8 @@ alert("SCRIPT LOADED");
       invoiceModal: byId("invoiceModal"),
       invoiceModalTitle: byId("invoiceModalTitle"),
       closeInvoiceModalBtn: byId("closeInvoiceModalBtn"),
+      editNoteWrap: byId("editNoteWrap"),
+      editRequiredNote: byId("editRequiredNote"),
       invoiceNumber: byId("invoiceNumber"),
       invoiceDate: byId("invoiceDate"),
       poNumber: byId("poNumber"),
@@ -137,6 +144,12 @@ alert("SCRIPT LOADED");
       paymentReviewBox: byId("paymentReviewBox"),
       savePaymentBtn: byId("savePaymentBtn"),
 
+      changePasswordModal: byId("changePasswordModal"),
+      changePasswordTitle: byId("changePasswordTitle"),
+      newOwnPassword: byId("newOwnPassword"),
+      confirmOwnPassword: byId("confirmOwnPassword"),
+      saveOwnPasswordBtn: byId("saveOwnPasswordBtn"),
+
       execDateFrom: byId("execDateFrom"),
       execDateTo: byId("execDateTo"),
       applyExecFilterBtn: byId("applyExecFilterBtn"),
@@ -147,68 +160,98 @@ alert("SCRIPT LOADED");
       execCollected: byId("execCollected"),
       execOutstanding: byId("execOutstanding"),
       execOverdue: byId("execOverdue"),
-      monthlyChart: byId("monthlyChart"),
-      topCustomersChart: byId("topCustomersChart"),
       agingTableBody: byId("agingTableBody"),
+
+      tbvTableBody: byId("tbvTableBody"),
+      notificationsOverdueBody: byId("notificationsOverdueBody"),
+
+      reportCustomerFilter: byId("reportCustomerFilter"),
+      reportInvoiceDateFrom: byId("reportInvoiceDateFrom"),
+      reportInvoiceDateTo: byId("reportInvoiceDateTo"),
+      reportPaidDateFrom: byId("reportPaidDateFrom"),
+      reportPaidDateTo: byId("reportPaidDateTo"),
+      reportStatusFilter: byId("reportStatusFilter"),
+      applyReportFilterBtn: byId("applyReportFilterBtn"),
+      clearReportFilterBtn: byId("clearReportFilterBtn"),
+      downloadReportBtn: byId("downloadReportBtn"),
+      printReportBtn: byId("printReportBtn"),
+      reportsTableBody: byId("reportsTableBody"),
+      reportInvoicesCount: byId("reportInvoicesCount"),
+      reportTotalInvoiced: byId("reportTotalInvoiced"),
+      reportTotalPaid: byId("reportTotalPaid"),
+      reportTotalOutstanding: byId("reportTotalOutstanding"),
 
       logTableBody: byId("logTableBody"),
 
-      usersTableBody: byId("usersTableBody"),
-      openUserModalBtn: byId("openUserModalBtn"),
-      userModal: byId("userModal"),
-      closeUserModalBtn: byId("closeUserModalBtn"),
-      newUsername: byId("newUsername"),
-      newPassword: byId("newPassword"),
-      newUserRole: byId("newUserRole"),
-      saveUserBtn: byId("saveUserBtn")
+      tbvModal: byId("tbvModal"),
+      closeTbvModalBtn: byId("closeTbvModalBtn"),
+      tbvInvoiceInfo: byId("tbvInvoiceInfo"),
+      tbvExplanationInput: byId("tbvExplanationInput"),
+      saveTbvBtn: byId("saveTbvBtn"),
+
+      tbvDecisionModal: byId("tbvDecisionModal"),
+      closeTbvDecisionModalBtn: byId("closeTbvDecisionModalBtn"),
+      tbvDecisionInfo: byId("tbvDecisionInfo"),
+      tbvDecisionNotesInput: byId("tbvDecisionNotesInput"),
+      denyTbvBtn: byId("denyTbvBtn"),
+      approveTbvBtn: byId("approveTbvBtn"),
+
+      soaModal: byId("soaModal"),
+      closeSoaModalBtn: byId("closeSoaModalBtn"),
+      soaPreparedBy: byId("soaPreparedBy"),
+      soaAsOfDate: byId("soaAsOfDate"),
+      soaShowPayments: byId("soaShowPayments"),
+      generateSoaBtn: byId("generateSoaBtn")
     };
   }
 
   function bindEvents() {
     el.loginBtn.addEventListener("click", login);
     el.loginPassword.addEventListener("keydown", (e) => e.key === "Enter" && login());
-    el.openChangePasswordBtn.addEventListener("click", openChangePasswordModal);
+
+    el.openChangePasswordBtn.addEventListener("click", () => openChangePasswordModal(false));
     el.saveOwnPasswordBtn.addEventListener("click", saveOwnPassword);
+    el.logoutBtn.addEventListener("click", logout);
 
     el.navCustomers.addEventListener("click", () => setView("customers"));
     el.navExecutive.addEventListener("click", () => setView("executive"));
+    el.navNotifications.addEventListener("click", () => setView("notifications"));
+    el.navReports.addEventListener("click", () => setView("reports"));
     el.navLogs.addEventListener("click", () => setView("logs"));
-    el.navUsers.addEventListener("click", () => setView("users"));
-    el.logoutBtn.addEventListener("click", logout);
 
     el.openCustomerModalBtn.addEventListener("click", openAddCustomerModal);
-    el.customerSearchBtn.addEventListener("click", runCustomerSearch);
-    el.customerClearSearchBtn.addEventListener("click", clearCustomerSearch);
-    el.customerSearch.addEventListener("keydown", (e) => e.key === "Enter" && runCustomerSearch());
+    el.customerSearchBtn.addEventListener("click", renderCustomerList);
+    el.customerClearSearchBtn.addEventListener("click", () => {
+      el.customerSearch.value = "";
+      renderCustomerList();
+    });
 
-    el.closeCustomerModalBtn.addEventListener("click", closeCustomerModal);
+    el.closeCustomerModalBtn.addEventListener("click", () => closeModal(el.customerModal));
     el.addContactBtn.addEventListener("click", () => addContactRow());
     el.saveCustomerBtn.addEventListener("click", saveCustomer);
 
     el.createInvoiceBtn.addEventListener("click", openInvoiceModalForCreate);
-    el.makePaymentBtn.addEventListener("click", openPaymentTypeModal);
-    el.editCustomerBtn.addEventListener("click", openEditCustomerModal);
-    el.deleteCustomerBtn.addEventListener("click", deleteCustomer);
-
-    el.closeInvoiceModalBtn.addEventListener("click", closeInvoiceModal);
+    el.closeInvoiceModalBtn.addEventListener("click", () => closeModal(el.invoiceModal));
     el.addLineBtn.addEventListener("click", () => addLineItemRow());
     el.saveInvoiceBtn.addEventListener("click", saveInvoice);
-    el.closeInvoiceViewModalBtn.addEventListener("click", closeInvoiceViewModal);
 
-    el.closePaymentTypeModalBtn.addEventListener("click", closePaymentTypeModal);
+    el.closeInvoiceViewModalBtn.addEventListener("click", () => closeModal(el.invoiceViewModal));
+
+    el.makePaymentBtn.addEventListener("click", openPaymentTypeModal);
+    el.closePaymentTypeModalBtn.addEventListener("click", () => closeModal(el.paymentTypeModal));
     el.payByInvoiceBtn.addEventListener("click", openPayByInvoiceStep);
     el.partialPaymentBtn.addEventListener("click", openPartialPaymentStep);
 
-    el.closeInvoiceSelectionModalBtn.addEventListener("click", closeInvoiceSelectionModal);
-    el.cancelInvoiceSelectionBtn.addEventListener("click", closeInvoiceSelectionModal);
+    el.closeInvoiceSelectionModalBtn.addEventListener("click", () => closeModal(el.invoiceSelectionModal));
+    el.cancelInvoiceSelectionBtn.addEventListener("click", () => closeModal(el.invoiceSelectionModal));
     el.proceedInvoiceSelectionBtn.addEventListener("click", proceedSelectedInvoices);
 
-    el.closePartialPaymentModalBtn.addEventListener("click", closePartialPaymentModal);
+    el.closePartialPaymentModalBtn.addEventListener("click", () => closeModal(el.partialPaymentModal));
     el.partialInvoiceSelect.addEventListener("change", renderPartialBalanceInfo);
     el.partialAmountInput.addEventListener("input", renderPartialBalanceInfo);
     el.proceedPartialPaymentBtn.addEventListener("click", proceedPartialPayment);
 
-    el.closePaymentMethodModalBtn.addEventListener("click", closePaymentMethodModal);
+    el.closePaymentMethodModalBtn.addEventListener("click", () => closeModal(el.paymentMethodModal));
     el.paymentMethodSelect.addEventListener("change", renderPaymentMethodFields);
     el.savePaymentBtn.addEventListener("click", savePayment);
 
@@ -219,9 +262,21 @@ alert("SCRIPT LOADED");
       renderExecutiveView();
     });
 
-    el.openUserModalBtn.addEventListener("click", openUserModal);
-    el.closeUserModalBtn.addEventListener("click", closeUserModal);
-    el.saveUserBtn.addEventListener("click", saveUser);
+    el.applyReportFilterBtn.addEventListener("click", renderReportsView);
+    el.clearReportFilterBtn.addEventListener("click", clearReportFilters);
+    el.downloadReportBtn.addEventListener("click", downloadReportCsv);
+    el.printReportBtn.addEventListener("click", printReport);
+
+    el.closeTbvModalBtn.addEventListener("click", () => closeModal(el.tbvModal));
+    el.saveTbvBtn.addEventListener("click", saveTbvRequest);
+
+    el.closeTbvDecisionModalBtn.addEventListener("click", () => closeModal(el.tbvDecisionModal));
+    el.approveTbvBtn.addEventListener("click", () => decideTbv("APPROVED"));
+    el.denyTbvBtn.addEventListener("click", () => decideTbv("DENIED"));
+
+    el.createSOABtn.addEventListener("click", openSoaModal);
+    el.closeSoaModalBtn.addEventListener("click", () => closeModal(el.soaModal));
+    el.generateSoaBtn.addEventListener("click", generateSoa);
 
     document.querySelectorAll(".modal").forEach((modal) => {
       modal.addEventListener("click", (e) => {
@@ -234,287 +289,124 @@ alert("SCRIPT LOADED");
         document.querySelectorAll(".modal").forEach((m) => (m.style.display = "none"));
       }
     });
+
+    window.addEventListener("online", () => alert("Internet connection restored."));
+    window.addEventListener("offline", () => alert("You are offline. Already-loaded data can still be viewed, printed, and exported on this device."));
   }
 
   async function bootstrap() {
     const { data, error } = await supabaseClient.auth.getSession();
-
-    if (error) {
-      console.error(error);
+    if (error || !data.session?.user) {
       showLogin();
       return;
     }
 
-    const session = data.session;
-
-    if (!session || !session.user) {
+    const profile = await getProfile(data.session.user.id);
+    if (!profile) {
       showLogin();
       return;
     }
 
-    const { data: profile, error: profileError } = await supabaseClient
+    state.currentProfile = profile;
+    await showApp();
+    if (profile.must_change_password) openChangePasswordModal(true);
+  }
+
+  async function getProfile(userId) {
+    const { data, error } = await supabaseClient
       .from("profiles")
       .select("*")
-      .eq("id", session.user.id)
+      .eq("id", userId)
       .single();
-
-    if (profileError || !profile) {
-      showLogin();
-      return;
-    }
-
-    window.currentProfile = profile;
-state.currentUserId = session.user.id;
-saveState();
-showApp();
-    
+    if (error) return null;
+    return data;
   }
 
-  async function loadCustomersFromSupabase() {
-    const { data, error } = await supabaseClient
-      .from("customers")
-      .select("*")
-      .order("name", { ascending: true });
+  function showLogin() {
+    el.loginScreen.classList.remove("hidden");
+    el.appShell.classList.add("hidden");
+  }
 
-    if (error) {
-      alert("Load customers failed: " + error.message);
-      return;
-    }
-
-    state.customers = (data || []).map((customer) => ({
-      id: customer.id,
-      name: customer.name,
-      phone: customer.phone,
-      email: customer.email || "",
-      contacts: [],
-      invoices: [],
-      payments: [],
-      createdAt: customer.created_at,
-      updatedAt: customer.updated_at
-    }));
-
+  async function showApp() {
+    el.loginScreen.classList.add("hidden");
+    el.appShell.classList.remove("hidden");
+    renderCurrentUser();
+    await loadAllData();
     renderCustomerList();
+    renderCurrentCustomerDashboard();
+    renderExecutiveView();
+    renderNotificationsView();
+    renderLogs();
+    renderReportsView();
+    setView(state.currentView);
   }
 
-  async function loadSelectedCustomerDetails() {
-    if (!selectedCustomerId) return;
-
-    const customer = state.customers.find((c) => c.id === selectedCustomerId);
-    if (!customer) return;
-
-    const { data: contacts, error: contactsError } = await supabaseClient
-      .from("customer_contacts")
-      .select("*")
-      .eq("customer_id", selectedCustomerId)
-      .order("created_at", { ascending: true });
-
-    if (contactsError) {
-      alert("Load contacts failed: " + contactsError.message);
-      return;
-    }
-async function loadInvoicesForSelectedCustomer() {
-  if (!selectedCustomerId) return;
-
-  const customer = state.customers.find((c) => c.id === selectedCustomerId);
-  if (!customer) return;
-
-  const { data, error } = await supabaseClient
-    .from("invoices")
-    .select("*")
-    .eq("customer_id", selectedCustomerId)
-    .order("invoice_date", { ascending: false });
-
-  if (error) {
-    alert("Load invoices failed: " + error.message);
-    return;
+  function getCurrentUser() {
+    return state.currentProfile;
   }
-
-  customer.invoices = (data || []).map((invoice) => ({
-    id: invoice.id,
-    number: invoice.invoice_number,
-    date: invoice.invoice_date,
-    po: invoice.po_number || "",
-    reference: invoice.reference_info || "",
-    items: [],
-    total: Number(invoice.total_amount || 0),
-    paidAmount: Number(invoice.paid_amount || 0),
-    balance: Number(invoice.balance_amount || 0),
-    status:
-      invoice.primary_status === "PAID"
-        ? "Paid"
-        : invoice.primary_status === "PARTIALLY_PAID"
-        ? "Partially Paid"
-        : "Unpaid",
-    notice:
-      invoice.payment_notice_status === "POST_DATED"
-        ? "Post-Dated Cheque"
-        : invoice.payment_notice_status === "PENDING_CHEQUE_CLEARANCE"
-        ? "Pending Cheque Clearance"
-        : "None",
-    chequeFollowUpDate: "",
-    createdAt: invoice.created_at,
-    updatedAt: invoice.updated_at
-  }));
-}
-    customer.contacts = (contacts || []).map((c) => ({
-      name: c.contact_name || "",
-      phone: c.phone || "",
-      email: c.email || ""
-    }));
-  }
-
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        parsed.users = Array.isArray(parsed.users) ? parsed.users : [defaultOwnerUser()];
-        parsed.customers = Array.isArray(parsed.customers) ? parsed.customers : [];
-        parsed.logs = Array.isArray(parsed.logs) ? parsed.logs : [];
-        parsed.currentUserId = parsed.currentUserId || null;
-        if (!parsed.users.some((u) => u.role === "owner")) parsed.users.unshift(defaultOwnerUser());
-        parsed.customers.forEach(normalizeCustomer);
-        return parsed;
-      }
-    } catch (error) {
-      console.error("Failed to load state", error);
-    }
-
-    return { users: [defaultOwnerUser()], customers: [], logs: [], currentUserId: null };
-  }
-
-  function normalizeCustomer(customer) {
-    customer.contacts = Array.isArray(customer.contacts) ? customer.contacts : [];
-    customer.invoices = Array.isArray(customer.invoices) ? customer.invoices : [];
-    customer.payments = Array.isArray(customer.payments) ? customer.payments : [];
-    customer.invoices.forEach((invoice) => {
-      invoice.notice = invoice.notice || "None";
-      invoice.chequeFollowUpDate = invoice.chequeFollowUpDate || "";
-      invoice.paidAmount = round2(invoice.paidAmount || 0);
-      invoice.total = round2(invoice.total || 0);
-      invoice.balance = round2(invoice.balance || 0);
-      invoice.status = invoice.status || getPrimaryStatus(invoice.balance, invoice.total);
-    });
-    customer.payments.forEach((payment) => {
-      payment.allocations = Array.isArray(payment.allocations) ? payment.allocations : [];
-      payment.details = payment.details || {};
-    });
-  }
-
-  function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
-
-  function defaultOwnerUser() {
-    return {
-      id: uid(),
-      username: "owner",
-      password: "AKY123!owner",
-      role: "owner",
-      active: true,
-      tempPassword: true,
-      createdAt: nowIso()
-    };
-  }
-
-function getCurrentUser() {
-  if (window.currentProfile) {
-    return {
-      id: window.currentProfile.id,
-      username: window.currentProfile.username,
-      role: window.currentProfile.role,
-      tempPassword: window.currentProfile.must_change_password,
-      active: window.currentProfile.is_active
-    };
-  }
-
-  return state.users.find((u) => u.id === state.currentUserId) || null;
-}
 
   function hasRole(...roles) {
     const user = getCurrentUser();
     return !!user && roles.includes(user.role);
   }
 
-  function isOwner() { return hasRole("owner"); }
-  function canEditData() { return hasRole("owner", "admin"); }
-  function canAccessExecutive() { return hasRole("owner", "co-owner"); }
-  function canAccessLogs() { return hasRole("owner", "admin", "co-owner"); }
+  function isOwner() {
+    return hasRole("owner");
+  }
 
-async function login() {
-  try {
-    alert("LOGIN CLICKED");
+  function canEditData() {
+    return hasRole("owner", "admin");
+  }
 
+  function canAccessExecutive() {
+    return hasRole("owner", "co-owner");
+  }
+
+  function canAccessLogs() {
+    return hasRole("owner", "admin", "co-owner");
+  }
+
+  function canRequestTbv() {
+    return hasRole("admin");
+  }
+
+  async function login() {
     const email = el.loginUsername.value.trim();
     const password = el.loginPassword.value;
 
     if (!email || !password) {
       el.loginMessage.textContent = "Please enter your email and password.";
-      alert("Please enter your email and password.");
       return;
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
       el.loginMessage.textContent = error.message;
-      alert("LOGIN ERROR: " + error.message);
       return;
     }
 
-    const user = data.user;
-
-    const { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError) {
-      el.loginMessage.textContent = profileError.message;
-      alert("PROFILE ERROR: " + profileError.message);
-      return;
-    }
-
+    const profile = await getProfile(data.user.id);
     if (!profile) {
       el.loginMessage.textContent = "Profile not found.";
-      alert("PROFILE ERROR: Profile not found.");
       return;
     }
 
-    window.currentProfile = profile;
-state.currentUserId = user.id;
-saveState();
+    state.currentProfile = profile;
+    el.loginMessage.textContent = "";
+    el.loginPassword.value = "";
+    await showApp();
 
-el.loginMessage.textContent = "";
-el.loginPassword.value = "";
-
-showApp();
-
-if (profile.must_change_password) {
-  openChangePasswordModal(true);
-}
-  } catch (err) {
-    console.error(err);
-    el.loginMessage.textContent = err.message || "Unexpected error.";
-    alert("UNEXPECTED ERROR: " + (err.message || "Unknown error"));
+    if (profile.must_change_password) openChangePasswordModal(true);
   }
-}
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.currentProfile = null;
-  state.currentUserId = null;
-  saveState();
-  selectedCustomerId = null;
-  showLogin();
-}
 
-  function openChangePasswordModal(force = false) {
-    const user = getCurrentUser();
-    if (!user) return;
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    state.currentProfile = null;
+    state.selectedCustomerId = null;
+    showLogin();
+  }
+
+  function openChangePasswordModal(force) {
     el.changePasswordTitle.textContent = force ? "Change Temporary Password" : "Change Password";
     el.newOwnPassword.value = "";
     el.confirmOwnPassword.value = "";
@@ -530,133 +422,296 @@ async function logout() {
     return "";
   }
 
-async function saveOwnPassword() {
-  const password = el.newOwnPassword.value;
-  const confirm = el.confirmOwnPassword.value;
-  const user = getCurrentUser();
-  if (!user) return;
+  async function saveOwnPassword() {
+    const password = el.newOwnPassword.value;
+    const confirm = el.confirmOwnPassword.value;
+    const validationError = validatePassword(password);
 
-  const error = validatePassword(password);
-  if (error) return alert(error);
-  if (password !== confirm) return alert("Passwords do not match.");
+    if (validationError) return alert(validationError);
+    if (password !== confirm) return alert("Passwords do not match.");
 
-  const { error: authError } = await supabaseClient.auth.updateUser({
-    password
-  });
+    const { error: authError } = await supabaseClient.auth.updateUser({ password });
+    if (authError) return alert(authError.message);
 
-  if (authError) {
-    alert(authError.message);
-    return;
+    const { error: profileError } = await supabaseClient
+      .from("profiles")
+      .update({ must_change_password: false })
+      .eq("id", state.currentProfile.id);
+
+    if (profileError) return alert(profileError.message);
+
+    state.currentProfile.must_change_password = false;
+    closeModal(el.changePasswordModal);
+    renderCurrentUser();
+    alert("Password changed successfully.");
   }
 
-  const { error: profileError } = await supabaseClient
-    .from("profiles")
-    .update({ must_change_password: false })
-    .eq("id", user.id);
+  async function loadAllData() {
+    const [
+      customersRes,
+      contactsRes,
+      invoicesRes,
+      invoiceItemsRes,
+      paymentsRes,
+      allocationsRes,
+      logsRes,
+      tbvsRes
+    ] = await Promise.all([
+      supabaseClient.from("customers").select("*").order("name", { ascending: true }),
+      supabaseClient.from("customer_contacts").select("*").order("created_at", { ascending: true }),
+      supabaseClient.from("invoices").select("*").eq("is_voided", false).order("invoice_date", { ascending: false }),
+      supabaseClient.from("invoice_items").select("*").order("created_at", { ascending: true }),
+      supabaseClient.from("payments").select("*").order("payment_date", { ascending: false }),
+      supabaseClient.from("payment_allocations").select("*"),
+      supabaseClient.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(500),
+      supabaseClient.from("invoice_void_requests").select("*").order("created_at", { ascending: false })
+    ]);
 
-  if (profileError) {
-    alert(profileError.message);
-    return;
+    if (customersRes.error) return alert(customersRes.error.message);
+    if (contactsRes.error) return alert(contactsRes.error.message);
+    if (invoicesRes.error) return alert(invoicesRes.error.message);
+    if (invoiceItemsRes.error) return alert(invoiceItemsRes.error.message);
+    if (paymentsRes.error) return alert(paymentsRes.error.message);
+    if (allocationsRes.error) return alert(allocationsRes.error.message);
+    if (logsRes.error) return alert(logsRes.error.message);
+    if (tbvsRes.error) return alert(tbvsRes.error.message);
+
+    state.customers = customersRes.data || [];
+    state.contacts = contactsRes.data || [];
+    state.invoices = invoicesRes.data || [];
+    state.invoiceItems = invoiceItemsRes.data || [];
+    state.payments = paymentsRes.data || [];
+    state.allocations = allocationsRes.data || [];
+    state.logs = logsRes.data || [];
+    state.tbvs = tbvsRes.data || [];
+
+    hydrateData();
+    populateReportCustomerFilter();
   }
 
-  if (window.currentProfile) {
-    window.currentProfile.must_change_password = false;
+  function hydrateData() {
+    const customerMap = new Map(state.customers.map((c) => [c.id, {
+      ...c,
+      contacts: [],
+      invoices: [],
+      payments: []
+    }]));
+
+    state.contacts.forEach((contact) => {
+      const customer = customerMap.get(contact.customer_id);
+      if (customer) customer.contacts.push(contact);
+    });
+
+    const invoiceItemMap = new Map();
+    state.invoiceItems.forEach((item) => {
+      if (!invoiceItemMap.has(item.invoice_id)) invoiceItemMap.set(item.invoice_id, []);
+      invoiceItemMap.get(item.invoice_id).push(item);
+    });
+
+    const paymentAllocMap = new Map();
+    state.allocations.forEach((alloc) => {
+      if (!paymentAllocMap.has(alloc.payment_id)) paymentAllocMap.set(alloc.payment_id, []);
+      paymentAllocMap.get(alloc.payment_id).push(alloc);
+    });
+
+    state.invoices = state.invoices.map((inv) => {
+      const items = invoiceItemMap.get(inv.id) || [];
+      return {
+        ...inv,
+        items,
+        total: Number(inv.total_amount || 0),
+        paidAmount: Number(inv.paid_amount || 0),
+        balance: Number(inv.balance_amount || 0),
+        status: getPrimaryStatus(Number(inv.balance_amount || 0), Number(inv.total_amount || 0))
+      };
+    });
+
+    state.payments = state.payments.map((p) => ({
+      ...p,
+      allocations: paymentAllocMap.get(p.id) || []
+    }));
+
+    state.invoices.forEach((invoice) => {
+      const customer = customerMap.get(invoice.customer_id);
+      if (customer) customer.invoices.push(invoice);
+    });
+
+    state.payments.forEach((payment) => {
+      const customer = customerMap.get(payment.customer_id);
+      if (customer) customer.payments.push(payment);
+    });
+
+    state.customers = Array.from(customerMap.values());
+
+    if (state.selectedCustomerId && !state.customers.some((c) => c.id === state.selectedCustomerId)) {
+      state.selectedCustomerId = null;
+    }
   }
-
-  closeModal(el.changePasswordModal);
-  renderCurrentUser();
-  alert("Password changed successfully.");
-}
-
-  function showLogin() {
-    el.loginScreen.classList.remove("hidden");
-    el.appShell.classList.add("hidden");
-    el.loginUsername.value = "";
-    el.loginPassword.value = "";
-    el.loginMessage.textContent = "";
-  }
-
-async function showApp() {
-  el.loginScreen.classList.add("hidden");
-  el.appShell.classList.remove("hidden");
-
-  renderCurrentUser();
-
-  await loadCustomersFromSupabase();
-
-  if (selectedCustomerId) {
-    await loadSelectedCustomerDetails();
-    await loadInvoicesForSelectedCustomer();
-  }
-
-  renderCurrentCustomerDashboard();
-  renderUsersTable();
-  renderLogs();
-  renderExecutiveView();
-  setView(currentView);
-}
 
   function renderCurrentUser() {
     const user = getCurrentUser();
     if (!user) return;
 
-    el.currentUserInfo.innerHTML = `<strong>${escapeHtml(user.username)}</strong><br>Role: <strong>${escapeHtml(capitalizeRole(user.role))}</strong>`;
+    el.currentUserInfo.innerHTML = `
+      <strong>${escapeHtml(user.username || user.email || "User")}</strong><br>
+      Role: <strong>${escapeHtml(capitalizeRole(user.role))}</strong>
+    `;
 
-    document.querySelectorAll(".owner-only").forEach((node) => node.classList.toggle("hidden", !isOwner()));
-    document.querySelectorAll(".edit-access").forEach((node) => node.classList.toggle("hidden", !canEditData()));
     document.querySelectorAll(".executive-access").forEach((node) => node.classList.toggle("hidden", !canAccessExecutive()));
     document.querySelectorAll(".log-access").forEach((node) => node.classList.toggle("hidden", !canAccessLogs()));
-    el.openCustomerModalBtn.classList.toggle("hidden", hasRole("co-owner"));
+    document.querySelectorAll(".edit-access").forEach((node) => node.classList.toggle("hidden", !canEditData()));
+
+    el.openCustomerModalBtn.classList.toggle("hidden", !canEditData());
     el.createInvoiceBtn.classList.toggle("hidden", !canEditData());
     el.makePaymentBtn.classList.toggle("hidden", hasRole("co-owner"));
+    el.editCustomerBtn.classList.toggle("hidden", !canEditData());
   }
 
   function setView(view) {
-    currentView = view;
+    state.currentView = view;
 
-    el.customersView.classList.add("hidden");
-    el.executiveView.classList.add("hidden");
-    el.logView.classList.add("hidden");
-    el.userAdminView.classList.add("hidden");
-
-    [el.navCustomers, el.navExecutive, el.navLogs, el.navUsers].forEach((btn) => btn.classList.remove("active"));
+    [el.customersView, el.executiveView, el.notificationsView, el.reportsView, el.logView].forEach((v) => v.classList.add("hidden"));
+    [el.navCustomers, el.navExecutive, el.navNotifications, el.navReports, el.navLogs].forEach((b) => b.classList.remove("active"));
 
     if (view === "customers") {
       el.customersView.classList.remove("hidden");
       el.navCustomers.classList.add("active");
-    } else if (view === "executive" && canAccessExecutive()) {
+      return;
+    }
+
+    if (view === "executive" && canAccessExecutive()) {
       el.executiveView.classList.remove("hidden");
       el.navExecutive.classList.add("active");
-      renderExecutiveView();
-    } else if (view === "logs" && canAccessLogs()) {
+      return;
+    }
+
+    if (view === "notifications" && canAccessExecutive()) {
+      el.notificationsView.classList.remove("hidden");
+      el.navNotifications.classList.add("active");
+      return;
+    }
+
+    if (view === "reports") {
+      el.reportsView.classList.remove("hidden");
+      el.navReports.classList.add("active");
+      return;
+    }
+
+    if (view === "logs" && canAccessLogs()) {
       el.logView.classList.remove("hidden");
       el.navLogs.classList.add("active");
-      renderLogs();
-    } else if (view === "users" && isOwner()) {
-      el.userAdminView.classList.remove("hidden");
-      el.navUsers.classList.add("active");
-      renderUsersTable();
-    } else {
-      currentView = "customers";
-      el.customersView.classList.remove("hidden");
-      el.navCustomers.classList.add("active");
+      return;
     }
+
+    el.customersView.classList.remove("hidden");
+    el.navCustomers.classList.add("active");
+    state.currentView = "customers";
   }
 
-  function runCustomerSearch() {
-    customerSearchTerm = el.customerSearch.value.trim().toLowerCase();
-    renderCustomerList();
+  function renderCustomerList() {
+    const term = (el.customerSearch.value || "").trim().toLowerCase();
+    const list = state.customers
+      .filter((c) => c.name.toLowerCase().includes(term))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    el.customerList.innerHTML = "";
+
+    if (!list.length) {
+      el.customerList.innerHTML = `<div class="muted">No matching customers.</div>`;
+      return;
+    }
+
+    list.forEach((customer) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "customer-item" + (customer.id === state.selectedCustomerId ? " active" : "");
+      button.textContent = customer.name;
+      button.addEventListener("click", () => {
+        state.selectedCustomerId = customer.id;
+        renderCustomerList();
+        renderCurrentCustomerDashboard();
+        setView("customers");
+      });
+      el.customerList.appendChild(button);
+    });
   }
 
-  function clearCustomerSearch() {
-    el.customerSearch.value = "";
-    customerSearchTerm = "";
-    renderCustomerList();
+  function getSelectedCustomer() {
+    return state.customers.find((c) => c.id === state.selectedCustomerId) || null;
+  }
+
+  function renderCurrentCustomerDashboard() {
+    const customer = getSelectedCustomer();
+    if (!customer) {
+      el.welcomePanel.classList.remove("hidden");
+      el.customerDashboard.classList.add("hidden");
+      return;
+    }
+
+    el.welcomePanel.classList.add("hidden");
+    el.customerDashboard.classList.remove("hidden");
+    el.customerTitle.textContent = customer.name;
+    el.customerMeta.textContent = `Primary Phone: ${customer.phone || "-"}${customer.email ? " | Email: " + customer.email : ""}`;
+
+    renderCustomerContacts(customer);
+    renderCustomerSummary(customer);
+    renderInvoiceTable(customer);
+    renderPaymentTable(customer);
+    renderAlertBox(customer);
+  }
+
+  function renderCustomerContacts(customer) {
+    const contacts = [
+      { contact_name: customer.name, phone: customer.phone, email: customer.email, primary: true },
+      ...(customer.contacts || [])
+    ];
+
+    el.customerContacts.innerHTML = contacts.map((contact, index) => `
+      <div class="contact-card">
+        <strong>${contact.primary ? "Primary Contact" : "Additional Contact " + index}</strong><br>
+        Name: ${escapeHtml(contact.contact_name || "-")}<br>
+        Phone: ${escapeHtml(contact.phone || "-")}<br>
+        Email: ${escapeHtml(contact.email || "-")}
+      </div>
+    `).join("");
+  }
+
+  function renderCustomerSummary(customer) {
+    const totalInvoiced = customer.invoices.reduce((sum, x) => sum + Number(x.total || 0), 0);
+    const totalCollected = customer.payments.filter((p) => p.cleared !== false).reduce((sum, x) => sum + Number(x.amount || 0), 0);
+    const totalOutstanding = customer.invoices.reduce((sum, x) => sum + Number(x.balance || 0), 0);
+    const overdueCount = customer.invoices.filter((x) => x.balance > 0 && getDaysOpen(x.invoice_date) > 90).length;
+
+    el.sumInvoiced.textContent = formatPeso(totalInvoiced);
+    el.sumCollected.textContent = formatPeso(totalCollected);
+    el.sumOutstanding.textContent = formatPeso(totalOutstanding);
+    el.sumOverdue.textContent = String(overdueCount);
+  }
+
+  function renderAlertBox(customer) {
+    const alerts = [];
+    customer.invoices.filter((x) => x.balance > 0 && getDaysOpen(x.invoice_date) > 90).forEach((x) => {
+      alerts.push(`Overdue 90+ days: ${x.invoice_number} (${formatPeso(x.balance)})`);
+    });
+
+    customer.invoices.forEach((x) => {
+      const tbv = state.tbvs.find((t) => t.invoice_id === x.id && t.status === "PENDING");
+      if (tbv) alerts.push(`TBV pending: ${x.invoice_number}`);
+    });
+
+    if (!alerts.length) {
+      el.overdueAlertBox.classList.add("hidden");
+      el.overdueAlertBox.innerHTML = "";
+      return;
+    }
+
+    el.overdueAlertBox.classList.remove("hidden");
+    el.overdueAlertBox.innerHTML = alerts.map((a) => `<div>${escapeHtml(a)}</div>`).join("");
   }
 
   function openAddCustomerModal() {
-    if (hasRole("co-owner")) return;
-    editingCustomerId = null;
+    if (!canEditData()) return;
+    state.editingCustomerId = null;
     el.customerModalTitle.textContent = "Add Customer";
     el.customerFormName.value = "";
     el.customerFormPhone.value = "";
@@ -671,64 +726,52 @@ async function showApp() {
     const customer = getSelectedCustomer();
     if (!customer) return;
 
-    editingCustomerId = customer.id;
+    state.editingCustomerId = customer.id;
     el.customerModalTitle.textContent = "Edit Customer";
     el.customerFormName.value = customer.name || "";
     el.customerFormPhone.value = customer.phone || "";
     el.customerFormEmail.value = customer.email || "";
     el.additionalContacts.innerHTML = "";
-    (customer.contacts.length ? customer.contacts : [{}]).forEach((contact) => addContactRow(contact));
+    (customer.contacts.length ? customer.contacts : [{}]).forEach((c) => addContactRow(c));
     openModal(el.customerModal);
   }
 
-  function closeCustomerModal() { closeModal(el.customerModal); }
+  el.editCustomerBtn?.addEventListener("click", openEditCustomerModal);
 
   function addContactRow(contact = {}) {
     const row = document.createElement("div");
     row.className = "form-grid two-col contact-card";
     row.innerHTML = `
-      <div class="field"><label>Contact Name</label><input type="text" class="contact-name" value="${escapeAttr(contact.name || "")}"></div>
+      <div class="field"><label>Contact Name</label><input type="text" class="contact-name" value="${escapeAttr(contact.contact_name || "")}"></div>
       <div class="field"><label>Contact Phone</label><input type="text" class="contact-phone" value="${escapeAttr(contact.phone || "")}"></div>
       <div class="field"><label>Contact Email</label><input type="email" class="contact-email" value="${escapeAttr(contact.email || "")}"></div>
-      <div class="field" style="display:flex;align-items:end;"><button type="button" class="btn btn-danger wide-btn remove-contact-btn">Remove Contact</button></div>`;
+      <div class="field" style="display:flex;align-items:end;"><button type="button" class="btn btn-danger wide-btn remove-contact-btn">Remove Contact</button></div>
+    `;
     row.querySelector(".remove-contact-btn").addEventListener("click", () => row.remove());
     el.additionalContacts.appendChild(row);
   }
 
- async function saveCustomer() {
-  if (hasRole("co-owner")) return;
+  async function saveCustomer() {
+    if (!canEditData()) return;
 
-  const name = el.customerFormName.value.trim();
-  const phone = el.customerFormPhone.value.trim();
-  const email = el.customerFormEmail.value.trim();
+    const name = el.customerFormName.value.trim();
+    const phone = el.customerFormPhone.value.trim();
+    const email = el.customerFormEmail.value.trim();
 
-  if (!name) {
-    alert("Customer name is required.");
-    return;
-  }
+    if (!name) return alert("Customer name is required.");
+    if (!phone) return alert("Phone number is required.");
 
-  if (!phone) {
-    alert("Phone number is required.");
-    return;
-  }
+    const contacts = [...el.additionalContacts.querySelectorAll(".contact-card")]
+      .map((card) => ({
+        contact_name: card.querySelector(".contact-name")?.value.trim() || "",
+        phone: card.querySelector(".contact-phone")?.value.trim() || "",
+        email: card.querySelector(".contact-email")?.value.trim() || ""
+      }))
+      .filter((c) => c.contact_name || c.phone || c.email);
 
-  const contacts = [...el.additionalContacts.querySelectorAll(".contact-card")]
-    .map((card) => ({
-      contact_name: card.querySelector(".contact-name").value.trim(),
-      phone: card.querySelector(".contact-phone").value.trim(),
-      email: card.querySelector(".contact-email").value.trim()
-    }))
-    .filter((c) => c.contact_name || c.phone || c.email);
-
-  const currentUser = getCurrentUser();
-  if (!currentUser) {
-    alert("No logged in user found.");
-    return;
-  }
-
-  try {
-    if (editingCustomerId) {
-      const { error: updateError } = await supabaseClient
+    if (state.editingCustomerId) {
+      const existing = getSelectedCustomer();
+      const { error } = await supabaseClient
         .from("customers")
         .update({
           name,
@@ -736,257 +779,67 @@ async function showApp() {
           email: email || null,
           updated_at: new Date().toISOString()
         })
-        .eq("id", editingCustomerId);
+        .eq("id", state.editingCustomerId);
 
-      if (updateError) {
-        alert(updateError.message);
-        return;
-      }
+      if (error) return alert(error.message);
 
-      const { error: deleteContactsError } = await supabaseClient
-        .from("customer_contacts")
-        .delete()
-        .eq("customer_id", editingCustomerId);
+      await supabaseClient.from("customer_contacts").delete().eq("customer_id", state.editingCustomerId);
 
-      if (deleteContactsError) {
-        alert(deleteContactsError.message);
-        return;
-      }
-
-      if (contacts.length > 0) {
-        const contactRows = contacts.map((c) => ({
-          customer_id: editingCustomerId,
-          contact_name: c.contact_name || null,
-          phone: c.phone || null,
-          email: c.email || null
-        }));
-
-        const { error: insertContactsError } = await supabaseClient
+      if (contacts.length) {
+        const { error: contactErr } = await supabaseClient
           .from("customer_contacts")
-          .insert(contactRows);
-
-        if (insertContactsError) {
-          alert(insertContactsError.message);
-          return;
-        }
+          .insert(contacts.map((c) => ({ ...c, customer_id: state.editingCustomerId })));
+        if (contactErr) return alert(contactErr.message);
       }
+
+      await addLog("Edit", "Customer", existing?.name || name, "", existing || null, { name, phone, email });
     } else {
-      const { data: newCustomer, error: insertError } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("customers")
-        .insert([
-          {
-            name,
-            phone,
-            email: email || null,
-            created_by: currentUser.id
-          }
-        ])
+        .insert([{
+          name,
+          phone,
+          email: email || null,
+          created_by: state.currentProfile.id
+        }])
         .select()
         .single();
 
-      if (insertError) {
-        alert(insertError.message);
-        return;
-      }
+      if (error) return alert(error.message);
 
-      if (contacts.length > 0) {
-        const contactRows = contacts.map((c) => ({
-          customer_id: newCustomer.id,
-          contact_name: c.contact_name || null,
-          phone: c.phone || null,
-          email: c.email || null
-        }));
-
-        const { error: insertContactsError } = await supabaseClient
+      if (contacts.length) {
+        const { error: contactErr } = await supabaseClient
           .from("customer_contacts")
-          .insert(contactRows);
-
-        if (insertContactsError) {
-          alert(insertContactsError.message);
-          return;
-        }
+          .insert(contacts.map((c) => ({ ...c, customer_id: data.id })));
+        if (contactErr) return alert(contactErr.message);
       }
 
-      selectedCustomerId = newCustomer.id;
+      state.selectedCustomerId = data.id;
+      await addLog("Create", "Customer", name, "", null, data);
     }
 
-    closeCustomerModal();
-    editingCustomerId = null;
-    await loadCustomersFromSupabase();
-    await loadSelectedCustomerDetails();
-  
-  customer.contacts = (contacts || []).map((c) => ({
-    name: c.contact_name || "",
-    phone: c.phone || "",
-    email: c.email || ""
-  }));
-}
-
-async function loadInvoicesForSelectedCustomer() {
-  if (!selectedCustomerId) return;
-
-  const customer = state.customers.find((c) => c.id === selectedCustomerId);
-  if (!customer) return;
-
-  const { data, error } = await supabaseClient
-    .from("invoices")
-    .select("*")
-    .eq("customer_id", selectedCustomerId)
-    .order("invoice_date", { ascending: false });
-
-  if (error) {
-    alert("Load invoices failed: " + error.message);
-    return;
-  }
-
-  customer.invoices = (data || []).map((invoice) => ({
-    id: invoice.id,
-    number: invoice.invoice_number,
-    date: invoice.invoice_date,
-    po: invoice.po_number || "",
-    reference: invoice.reference_info || "",
-    items: [],
-    total: Number(invoice.total_amount || 0),
-    paidAmount: Number(invoice.paid_amount || 0),
-    balance: Number(invoice.balance_amount || 0),
-    status:
-      invoice.primary_status === "PAID"
-        ? "Paid"
-        : invoice.primary_status === "PARTIALLY_PAID"
-        ? "Partially Paid"
-        : "Unpaid",
-    notice:
-      invoice.payment_notice_status === "POST_DATED"
-        ? "Post-Dated Cheque"
-        : invoice.payment_notice_status === "PENDING_CHEQUE_CLEARANCE"
-        ? "Pending Cheque Clearance"
-        : "None",
-    chequeFollowUpDate: "",
-    createdAt: invoice.created_at,
-    updatedAt: invoice.updated_at
-  }));
-}
-    renderCurrentCustomerDashboard();
-    alert("Customer saved successfully.");
-  } catch (err) {
-    console.error(err);
-    alert("Customer save failed: " + err.message);
-  }
-}
-  function deleteCustomer() {
-    if (!canEditData()) return;
-    const customer = getSelectedCustomer();
-    if (!customer) return;
-    if (!confirm(`Delete customer "${customer.name}"? This will also delete invoices and payments.`)) return;
-
-    const reason = requireExplanationIfNeeded("delete this customer");
-    if (reason === null) return;
-    logAction("Delete", "Customer", customer.name, reason, customer, null);
-    state.customers = state.customers.filter((c) => c.id !== customer.id);
-    selectedCustomerId = null;
-    saveState();
+    closeModal(el.customerModal);
+    state.editingCustomerId = null;
+    await loadAllData();
     renderCustomerList();
     renderCurrentCustomerDashboard();
     renderExecutiveView();
+    renderNotificationsView();
     renderLogs();
-  }
-
-  function renderCustomerList() {
-    const customers = state.customers.filter((c) => c.name.toLowerCase().includes(customerSearchTerm)).sort((a, b) => a.name.localeCompare(b.name));
-    el.customerList.innerHTML = "";
-    if (customers.length === 0) {
-      el.customerList.innerHTML = `<div class="muted">No matching customers.</div>`;
-      return;
-    }
-
-    customers.forEach((customer) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "customer-item" + (customer.id === selectedCustomerId ? " active" : "");
-      button.textContent = customer.name;
-      button.addEventListener("click", async () => {
-  selectedCustomerId = customer.id;
-  await loadSelectedCustomerDetails();
-  await loadInvoicesForSelectedCustomer();
-  renderCustomerList();
-  renderCurrentCustomerDashboard();
-  setView("customers");
-});
-      el.customerList.appendChild(button);
-    });
-  }
-
-  function getSelectedCustomer() {
-    return state.customers.find((c) => c.id === selectedCustomerId) || null;
-  }
-
-  function renderCurrentCustomerDashboard() {
-    const customer = getSelectedCustomer();
-    if (!customer) {
-      el.welcomePanel.classList.remove("hidden");
-      el.customerDashboard.classList.add("hidden");
-      return;
-    }
-
-    el.welcomePanel.classList.add("hidden");
-    el.customerDashboard.classList.remove("hidden");
-    el.customerTitle.textContent = customer.name;
-    el.customerMeta.textContent = `Primary Phone: ${customer.phone}${customer.email ? " | Email: " + customer.email : ""}`;
-
-    renderCustomerContacts(customer);
-    renderCustomerSummary(customer);
-    renderInvoiceTable(customer);
-    renderPaymentTable(customer);
-    renderAlertBox(customer);
-  }
-
-  function renderCustomerContacts(customer) {
-    const contacts = [{ name: customer.name, phone: customer.phone, email: customer.email, primary: true }, ...customer.contacts];
-    el.customerContacts.innerHTML = contacts.map((contact, index) => `
-      <div class="contact-card">
-        <strong>${contact.primary ? "Primary Contact" : "Additional Contact " + index}</strong><br>
-        Name: ${escapeHtml(contact.name || "-")}<br>
-        Phone: ${escapeHtml(contact.phone || "-")}<br>
-        Email: ${escapeHtml(contact.email || "-")}
-      </div>`).join("");
-  }
-
-  function renderCustomerSummary(customer) {
-    const totalInvoiced = customer.invoices.reduce((sum, invoice) => sum + invoice.total, 0);
-    const totalCollected = customer.payments.filter((p) => p.cleared !== false).reduce((sum, payment) => sum + payment.amount, 0);
-    const totalOutstanding = customer.invoices.reduce((sum, invoice) => sum + invoice.balance, 0);
-    const overdueCount = customer.invoices.filter((inv) => inv.balance > 0 && getDaysOpen(inv.date) > 90).length;
-
-    el.sumInvoiced.textContent = formatPeso(totalInvoiced);
-    el.sumCollected.textContent = formatPeso(totalCollected);
-    el.sumOutstanding.textContent = formatPeso(totalOutstanding);
-    el.sumOverdue.textContent = String(overdueCount);
-  }
-
-  function renderAlertBox(customer) {
-    const alerts = [];
-    customer.invoices.filter((inv) => inv.balance > 0 && getDaysOpen(inv.date) > 90).forEach((inv) => {
-      alerts.push(`Overdue 90+ days: ${inv.number} (${formatPeso(inv.balance)})`);
-    });
-    customer.invoices.filter((inv) => inv.notice === "Post-Dated Cheque").forEach((inv) => {
-      alerts.push(`Post-dated cheque follow-up: ${inv.number} on ${inv.chequeFollowUpDate || "date missing"}`);
-    });
-
-    if (!alerts.length) {
-      el.overdueAlertBox.classList.add("hidden");
-      el.overdueAlertBox.innerHTML = "";
-      return;
-    }
-
-    el.overdueAlertBox.classList.remove("hidden");
-    el.overdueAlertBox.innerHTML = alerts.map((item) => `<div>${escapeHtml(item)}</div>`).join("");
+    renderReportsView();
+    alert("Customer saved successfully.");
   }
 
   function openInvoiceModalForCreate() {
     if (!canEditData()) return;
-    if (!getSelectedCustomer()) return alert("Please select a customer first.");
-    editingInvoiceId = null;
+    const customer = getSelectedCustomer();
+    if (!customer) return alert("Please select a customer first.");
+
+    state.editingInvoiceId = null;
     el.invoiceModalTitle.textContent = "Create Invoice";
+    el.editNoteWrap.classList.add("hidden");
+    el.editRequiredNote.value = "";
+
     clearInvoiceForm();
     el.invoiceDate.value = todayStr();
     addLineItemRow();
@@ -998,17 +851,25 @@ async function loadInvoicesForSelectedCustomer() {
     if (!canEditData()) return;
     const customer = getSelectedCustomer();
     if (!customer) return;
+
     const invoice = customer.invoices.find((x) => x.id === invoiceId);
     if (!invoice) return;
 
-    editingInvoiceId = invoice.id;
+    state.editingInvoiceId = invoice.id;
     el.invoiceModalTitle.textContent = "Edit Invoice";
+    el.editNoteWrap.classList.remove("hidden");
+    el.editRequiredNote.value = "";
+
     clearInvoiceForm();
-    el.invoiceNumber.value = invoice.number;
-    el.invoiceDate.value = invoice.date;
-    el.poNumber.value = invoice.po || "";
-    el.referenceInfo.value = invoice.reference || "";
-    invoice.items.forEach((item) => addLineItemRow(item));
+    el.invoiceNumber.value = invoice.invoice_number || "";
+    el.invoiceDate.value = invoice.invoice_date || "";
+    el.poNumber.value = invoice.po_number || "";
+    el.referenceInfo.value = invoice.reference_info || "";
+    (invoice.items.length ? invoice.items : [{}]).forEach((item) => addLineItemRow({
+      product: item.product_name,
+      qty: item.qty,
+      price: item.unit_price
+    }));
     updateInvoiceTotal();
     openModal(el.invoiceModal);
   }
@@ -1022,8 +883,6 @@ async function loadInvoicesForSelectedCustomer() {
     el.invoiceTotalAmount.textContent = formatPeso(0);
   }
 
-  function closeInvoiceModal() { closeModal(el.invoiceModal); }
-
   function addLineItemRow(item = {}) {
     const row = document.createElement("div");
     row.className = "line-item";
@@ -1032,11 +891,13 @@ async function loadInvoicesForSelectedCustomer() {
       <input type="number" class="line-qty" placeholder="Qty" min="0" step="0.01" value="${item.qty ?? ""}">
       <input type="number" class="line-price" placeholder="Price" min="0" step="0.01" value="${item.price ?? ""}">
       <div class="line-total-box">₱0</div>
-      <button type="button" class="delete-line-btn">&times;</button>`;
+      <button type="button" class="delete-line-btn">&times;</button>
+    `;
 
     const qtyInput = row.querySelector(".line-qty");
     const priceInput = row.querySelector(".line-price");
     const totalBox = row.querySelector(".line-total-box");
+
     const recalc = () => {
       const qty = num(qtyInput.value);
       const price = num(priceInput.value);
@@ -1046,6 +907,7 @@ async function loadInvoicesForSelectedCustomer() {
 
     qtyInput.addEventListener("input", recalc);
     priceInput.addEventListener("input", recalc);
+
     row.querySelector(".delete-line-btn").addEventListener("click", () => {
       row.remove();
       if (!el.lineItemsContainer.children.length) addLineItemRow();
@@ -1058,205 +920,115 @@ async function loadInvoicesForSelectedCustomer() {
 
   function updateInvoiceTotal() {
     const total = [...el.lineItemsContainer.querySelectorAll(".line-item")].reduce((sum, row) => {
-      return sum + num(row.querySelector(".line-qty").value) * num(row.querySelector(".line-price").value);
+      return sum + (num(row.querySelector(".line-qty").value) * num(row.querySelector(".line-price").value));
     }, 0);
     el.invoiceTotalAmount.textContent = formatPeso(total);
   }
 
   async function saveInvoice() {
-  const customer = getSelectedCustomer();
-  if (!customer || !canEditData()) return;
+    const customer = getSelectedCustomer();
+    if (!customer || !canEditData()) return;
 
-  const number = el.invoiceNumber.value.trim();
-  const date = el.invoiceDate.value;
-  const po = el.poNumber.value.trim();
-  const reference = el.referenceInfo.value.trim();
+    const invoiceNumber = el.invoiceNumber.value.trim();
+    const invoiceDate = el.invoiceDate.value;
+    const poNumber = el.poNumber.value.trim();
+    const referenceInfo = el.referenceInfo.value.trim();
 
-  if (!number) return alert("Invoice number is required.");
-  if (!date) return alert("Invoice date is required.");
+    if (!invoiceNumber) return alert("Invoice number is required.");
+    if (!invoiceDate) return alert("Invoice date is required.");
 
-  const items = [...el.lineItemsContainer.querySelectorAll(".line-item")]
-    .map((row) => {
-      const product = row.querySelector(".line-product").value.trim();
-      const qty = num(row.querySelector(".line-qty").value);
-      const price = num(row.querySelector(".line-price").value);
-      return { product, qty, price, total: round2(qty * price) };
-    })
-    .filter((item) => item.product || item.qty || item.price);
+    const items = [...el.lineItemsContainer.querySelectorAll(".line-item")]
+      .map((row) => {
+        const product = row.querySelector(".line-product").value.trim();
+        const qty = num(row.querySelector(".line-qty").value);
+        const price = num(row.querySelector(".line-price").value);
+        return {
+          product_name: product,
+          qty,
+          unit_price: price,
+          line_total: round2(qty * price)
+        };
+      })
+      .filter((item) => item.product_name || item.qty || item.unit_price);
 
-  if (!items.length) return alert("Add at least one line item.");
+    if (!items.length) return alert("Add at least one line item.");
 
-  const total = round2(items.reduce((sum, item) => sum + item.total, 0));
+    const total = round2(items.reduce((sum, item) => sum + item.line_total, 0));
 
-  try {
-    if (editingInvoiceId) {
-      const existing = customer.invoices.find((inv) => inv.id === editingInvoiceId);
-      if (!existing) return;
+    if (state.editingInvoiceId) {
+      const editNote = el.editRequiredNote.value.trim();
+      if (!editNote) return alert("Edit note is required.");
 
-      const paidAmount = Number(existing.paidAmount || 0);
+      const oldInvoice = state.invoices.find((x) => x.id === state.editingInvoiceId);
+      if (!oldInvoice) return alert("Invoice not found.");
+
+      const paidAmount = Number(oldInvoice.paidAmount || 0);
       const balanceAmount = round2(Math.max(0, total - paidAmount));
-      const primaryStatus =
-        balanceAmount <= 0 ? "PAID" : balanceAmount < total ? "PARTIALLY_PAID" : "UNPAID";
+      const primaryStatus = balanceAmount <= 0 ? "PAID" : balanceAmount < total ? "PARTIALLY_PAID" : "UNPAID";
 
       const { error } = await supabaseClient
         .from("invoices")
         .update({
-          invoice_number: number,
-          invoice_date: date,
-          po_number: po || null,
-          reference_info: reference || null,
+          invoice_number: invoiceNumber,
+          invoice_date: invoiceDate,
+          po_number: poNumber || null,
+          reference_info: referenceInfo || null,
           total_amount: total,
           balance_amount: balanceAmount,
           primary_status: primaryStatus,
           updated_at: new Date().toISOString()
         })
-        .eq("id", editingInvoiceId);
+        .eq("id", state.editingInvoiceId);
 
-      if (error) {
-        alert(error.message);
-        return;
-      }
+      if (error) return alert(error.message);
+
+      await supabaseClient.from("invoice_items").delete().eq("invoice_id", state.editingInvoiceId);
+      const { error: itemError } = await supabaseClient
+        .from("invoice_items")
+        .insert(items.map((i) => ({ ...i, invoice_id: state.editingInvoiceId })));
+      if (itemError) return alert(itemError.message);
+
+      await addLog("Edit", "Invoice", invoiceNumber, editNote, oldInvoice, {
+        invoice_number: invoiceNumber,
+        invoice_date: invoiceDate,
+        po_number: poNumber,
+        reference_info: referenceInfo,
+        total_amount: total
+      });
     } else {
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("invoices")
-        .insert([
-          {
-            customer_id: customer.id,
-            invoice_number: number,
-            invoice_date: date,
-            po_number: po || null,
-            reference_info: reference || null,
-            total_amount: total,
-            paid_amount: 0,
-            balance_amount: total,
-            primary_status: "UNPAID",
-            payment_notice_status: "NONE",
-            created_by: getCurrentUser().id
-          }
-        ]);
+        .insert([{
+          customer_id: customer.id,
+          invoice_number: invoiceNumber,
+          invoice_date: invoiceDate,
+          po_number: poNumber || null,
+          reference_info: referenceInfo || null,
+          total_amount: total,
+          paid_amount: 0,
+          balance_amount: total,
+          primary_status: "UNPAID",
+          payment_notice_status: "NONE",
+          created_by: state.currentProfile.id,
+          is_voided: false
+        }])
+        .select()
+        .single();
 
-      if (error) {
-        alert(error.message);
-        return;
-      }
+      if (error) return alert(error.message);
+
+      const { error: itemError } = await supabaseClient
+        .from("invoice_items")
+        .insert(items.map((i) => ({ ...i, invoice_id: data.id })));
+      if (itemError) return alert(itemError.message);
+
+      await addLog("Create", "Invoice", invoiceNumber, "", null, data);
     }
 
-    closeInvoiceModal();
-    editingInvoiceId = null;
-    await loadInvoicesForSelectedCustomer();
-    renderCurrentCustomerDashboard();
+    closeModal(el.invoiceModal);
+    state.editingInvoiceId = null;
+    await refreshAndRenderAll();
     alert("Invoice saved successfully.");
-  } catch (err) {
-    console.error(err);
-    alert("Invoice save failed: " + err.message);
-  }
-}
-    const customer = getSelectedCustomer();
-    if (!customer || !canEditData()) return;
-
-    const number = el.invoiceNumber.value.trim();
-    const date = el.invoiceDate.value;
-    const po = el.poNumber.value.trim();
-    const reference = el.referenceInfo.value.trim();
-
-    if (!number) return alert("Invoice number is required.");
-    if (!date) return alert("Invoice date is required.");
-
-    const items = [...el.lineItemsContainer.querySelectorAll(".line-item")].map((row) => {
-      const product = row.querySelector(".line-product").value.trim();
-      const qty = num(row.querySelector(".line-qty").value);
-      const price = num(row.querySelector(".line-price").value);
-      return { product, qty, price, total: round2(qty * price) };
-    }).filter((item) => item.product || item.qty || item.price);
-
-    if (!items.length) return alert("Add at least one line item.");
-    const total = round2(items.reduce((sum, item) => sum + item.total, 0));
-
-    if (editingInvoiceId) {
-      const invoice = customer.invoices.find((inv) => inv.id === editingInvoiceId);
-      if (!invoice) return;
-      const reason = requireExplanationIfNeeded("edit this invoice");
-      if (reason === null) return;
-      const before = clone(invoice);
-      const alreadyPaid = invoice.paidAmount || 0;
-      invoice.number = number;
-      invoice.date = date;
-      invoice.po = po;
-      invoice.reference = reference;
-      invoice.items = items;
-      invoice.total = total;
-      invoice.balance = round2(Math.max(0, total - alreadyPaid));
-      invoice.status = getPrimaryStatus(invoice.balance, invoice.total);
-      invoice.updatedAt = nowIso();
-      logAction("Edit", "Invoice", number, reason, before, invoice);
-    } else {
-      const invoice = {
-        id: uid(), number, date, po, reference, items, total,
-        paidAmount: 0, balance: total, status: "Unpaid", notice: "None",
-        chequeFollowUpDate: "", createdAt: nowIso(), updatedAt: nowIso()
-      };
-      customer.invoices.push(invoice);
-      logAction("Create", "Invoice", number, "", null, invoice);
-    }
-
-    saveState();
-    closeInvoiceModal();
-    renderCurrentCustomerDashboard();
-    renderExecutiveView();
-    renderLogs();
-  }
-
-  async function deleteInvoice(invoiceId) {
-  if (!canEditData()) return;
-
-  const customer = getSelectedCustomer();
-  if (!customer) return;
-
-  const invoice = customer.invoices.find((inv) => inv.id === invoiceId);
-  if (!invoice) return;
-
-  if (!confirm(`Delete invoice ${invoice.number}?`)) return;
-
-  try {
-    const { error } = await supabaseClient
-      .from("invoices")
-      .delete()
-      .eq("id", invoiceId);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    await loadInvoicesForSelectedCustomer();
-    renderCurrentCustomerDashboard();
-    alert("Invoice deleted successfully.");
-  } catch (err) {
-    console.error(err);
-    alert("Invoice delete failed: " + err.message);
-  }
-}
-    if (!canEditData()) return;
-    const customer = getSelectedCustomer();
-    if (!customer) return;
-    const invoice = customer.invoices.find((inv) => inv.id === invoiceId);
-    if (!invoice) return;
-    if (!confirm(`Delete invoice ${invoice.number}?`)) return;
-
-    const reason = requireExplanationIfNeeded("delete this invoice");
-    if (reason === null) return;
-    logAction("Delete", "Invoice", invoice.number, reason, invoice, null);
-
-    customer.payments.forEach((payment) => {
-      payment.allocations = payment.allocations.filter((alloc) => alloc.invoiceId !== invoiceId);
-    });
-    customer.invoices = customer.invoices.filter((inv) => inv.id !== invoiceId);
-    customer.payments = customer.payments.filter((payment) => payment.allocations.length > 0);
-
-    saveState();
-    renderCurrentCustomerDashboard();
-    renderExecutiveView();
-    renderLogs();
   }
 
   function viewInvoice(invoiceId) {
@@ -1265,55 +1037,116 @@ async function loadInvoicesForSelectedCustomer() {
     const invoice = customer.invoices.find((inv) => inv.id === invoiceId);
     if (!invoice) return;
 
-    const itemsHtml = invoice.items.map((item) => `
-      <tr><td>${escapeHtml(item.product || "-")}</td><td>${formatNumber(item.qty)}</td><td>${formatPeso(item.price)}</td><td>${formatPeso(item.total)}</td></tr>`).join("");
+    const tbv = state.tbvs.find((t) => t.invoice_id === invoice.id && t.status === "PENDING");
+    const itemsHtml = (invoice.items || []).map((item) => `
+      <tr>
+        <td>${escapeHtml(item.product_name || "-")}</td>
+        <td>${formatNumber(item.qty)}</td>
+        <td>${formatPeso(item.unit_price)}</td>
+        <td>${formatPeso(item.line_total)}</td>
+      </tr>
+    `).join("");
+
+    let actionButtons = "";
+
+    if (canEditData()) {
+      actionButtons += `<button class="btn btn-light" id="invoiceViewEditBtn">Edit Invoice</button>`;
+    }
+
+    if (canRequestTbv() && !tbv) {
+      actionButtons += `<button class="btn btn-danger" id="invoiceViewTbvBtn">TBV</button>`;
+    }
 
     el.invoiceViewContent.innerHTML = `
       <div class="invoice-meta-grid">
-        <div class="invoice-meta-card"><span>Invoice #</span><strong>${escapeHtml(invoice.number)}</strong></div>
-        <div class="invoice-meta-card"><span>Date</span><strong>${escapeHtml(invoice.date)}</strong></div>
-        <div class="invoice-meta-card"><span>PO #</span><strong>${escapeHtml(invoice.po || "-")}</strong></div>
-        <div class="invoice-meta-card"><span>Reference</span><strong>${escapeHtml(invoice.reference || "-")}</strong></div>
+        <div class="invoice-meta-card"><span>Invoice #</span><strong>${escapeHtml(invoice.invoice_number)}</strong></div>
+        <div class="invoice-meta-card"><span>Date</span><strong>${escapeHtml(invoice.invoice_date)}</strong></div>
+        <div class="invoice-meta-card"><span>PO #</span><strong>${escapeHtml(invoice.po_number || "-")}</strong></div>
+        <div class="invoice-meta-card"><span>Reference</span><strong>${escapeHtml(invoice.reference_info || "-")}</strong></div>
       </div>
-      <div class="table-wrap"><table class="records-table"><thead><tr><th>Product Name</th><th>Quantity</th><th>Price</th><th>Line Total</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>
+
+      <div class="table-wrap">
+        <table class="records-table">
+          <thead><tr><th>Product Name</th><th>Quantity</th><th>Price</th><th>Line Total</th></tr></thead>
+          <tbody>${itemsHtml || `<tr><td colspan="4" class="muted">No line items.</td></tr>`}</tbody>
+        </table>
+      </div>
+
       <div class="summary-grid" style="margin-top:16px;">
         <div class="panel summary-card"><span class="summary-label">Invoice Total</span><strong>${formatPeso(invoice.total)}</strong></div>
         <div class="panel summary-card"><span class="summary-label">Paid</span><strong>${formatPeso(invoice.paidAmount)}</strong></div>
         <div class="panel summary-card"><span class="summary-label">Balance</span><strong>${formatPeso(invoice.balance)}</strong></div>
-        <div class="panel summary-card"><span class="summary-label">Status</span><strong>${escapeHtml(invoice.status)} / ${escapeHtml(invoice.notice || "None")}</strong></div>
-      </div>`;
-    openModal(el.invoiceViewModal);
-  }
+        <div class="panel summary-card"><span class="summary-label">Status</span><strong>${escapeHtml(invoice.status)}</strong></div>
+      </div>
 
-  function closeInvoiceViewModal() { closeModal(el.invoiceViewModal); }
+      ${tbv ? `<div class="alert-box" style="margin-top:16px;">TBV status: ${escapeHtml(tbv.status)} | Explanation: ${escapeHtml(tbv.explanation)}</div>` : ""}
+
+      <div class="btn-row" style="margin-top:16px;">${actionButtons}</div>
+    `;
+
+    openModal(el.invoiceViewModal);
+
+    const editBtn = document.getElementById("invoiceViewEditBtn");
+    const tbvBtn = document.getElementById("invoiceViewTbvBtn");
+
+    if (editBtn) {
+      editBtn.addEventListener("click", () => {
+        closeModal(el.invoiceViewModal);
+        openInvoiceModalForEdit(invoice.id);
+      });
+    }
+
+    if (tbvBtn) {
+      tbvBtn.addEventListener("click", () => {
+        closeModal(el.invoiceViewModal);
+        openTbvModal(invoice.id);
+      });
+    }
+  }
 
   function renderInvoiceTable(customer) {
     el.invoiceTableBody.innerHTML = "";
+
     if (!customer.invoices.length) {
-      el.invoiceTableBody.innerHTML = `<tr><td colspan="${canEditData() ? 10 : 9}" class="muted">No invoices yet.</td></tr>`;
+      el.invoiceTableBody.innerHTML = `<tr><td colspan="10" class="muted">No invoices yet.</td></tr>`;
       return;
     }
 
-    customer.invoices.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).forEach((invoice) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="clickable">${escapeHtml(invoice.number)}</td>
-        <td>${escapeHtml(invoice.date)}</td>
-        <td>${escapeHtml(invoice.po || "-")}</td>
-        <td>${escapeHtml(invoice.reference || "-")}</td>
-        <td>${formatPeso(invoice.total)}</td>
-        <td>${formatPeso(invoice.paidAmount)}</td>
-        <td>${formatPeso(invoice.balance)}</td>
-        <td>${statusPill(invoice.status)}</td>
-        <td>${noticePill(invoice.notice, invoice.chequeFollowUpDate)}</td>
-        ${canEditData() ? `<td><div class="row-actions"><button class="btn btn-light action-edit">Edit</button><button class="btn btn-danger action-delete">Delete</button></div></td>` : ""}`;
-      tr.querySelector(".clickable").addEventListener("click", () => viewInvoice(invoice.id));
-      if (canEditData()) {
-        tr.querySelector(".action-edit").addEventListener("click", () => openInvoiceModalForEdit(invoice.id));
-        tr.querySelector(".action-delete").addEventListener("click", () => deleteInvoice(invoice.id));
-      }
-      el.invoiceTableBody.appendChild(tr);
-    });
+    customer.invoices
+      .slice()
+      .sort((a, b) => String(b.invoice_date).localeCompare(String(a.invoice_date)))
+      .forEach((invoice) => {
+        const tbv = state.tbvs.find((t) => t.invoice_id === invoice.id && t.status === "PENDING");
+        const tr = document.createElement("tr");
+
+        let actionHtml = `<button class="btn btn-light action-view">View</button>`;
+        if (canEditData()) actionHtml += ` <button class="btn btn-primary action-edit">Edit</button>`;
+        if (canRequestTbv() && !tbv) actionHtml += ` <button class="btn btn-danger action-tbv">TBV</button>`;
+
+        tr.innerHTML = `
+          <td class="clickable">${escapeHtml(invoice.invoice_number)}</td>
+          <td>${escapeHtml(invoice.invoice_date)}</td>
+          <td>${escapeHtml(invoice.po_number || "-")}</td>
+          <td>${escapeHtml(invoice.reference_info || "-")}</td>
+          <td>${formatPeso(invoice.total)}</td>
+          <td>${formatPeso(invoice.paidAmount)}</td>
+          <td>${formatPeso(invoice.balance)}</td>
+          <td>${statusPill(invoice.status)}</td>
+          <td>${tbv ? `<span class="notice-pill notice-postdated">PENDING</span>` : "-"}</td>
+          <td><div class="row-actions">${actionHtml}</div></td>
+        `;
+
+        tr.querySelector(".clickable").addEventListener("click", () => viewInvoice(invoice.id));
+        tr.querySelector(".action-view").addEventListener("click", () => viewInvoice(invoice.id));
+
+        const editBtn = tr.querySelector(".action-edit");
+        if (editBtn) editBtn.addEventListener("click", () => openInvoiceModalForEdit(invoice.id));
+
+        const tbvBtn = tr.querySelector(".action-tbv");
+        if (tbvBtn) tbvBtn.addEventListener("click", () => openTbvModal(invoice.id));
+
+        el.invoiceTableBody.appendChild(tr);
+      });
   }
 
   function openPaymentTypeModal() {
@@ -1322,29 +1155,33 @@ async function loadInvoicesForSelectedCustomer() {
     if (hasRole("co-owner")) return;
     const openInvoices = customer.invoices.filter((inv) => inv.balance > 0);
     if (!openInvoices.length) return alert("This customer has no open invoices.");
-    paymentDraft = null;
+    state.paymentDraft = null;
     openModal(el.paymentTypeModal);
   }
-
-  function closePaymentTypeModal() { closeModal(el.paymentTypeModal); }
 
   function openPayByInvoiceStep() {
     const customer = getSelectedCustomer();
     if (!customer) return;
-    closePaymentTypeModal();
 
+    closeModal(el.paymentTypeModal);
     el.invoiceSelectionList.innerHTML = "";
     el.selectedInvoicesTotal.textContent = formatPeso(0);
+
     customer.invoices.filter((inv) => inv.balance > 0).forEach((invoice) => {
       const label = document.createElement("label");
       label.className = "selection-item";
       label.innerHTML = `
         <input type="checkbox" data-id="${invoice.id}">
-        <div><strong>${escapeHtml(invoice.number)}</strong><small>Date: ${escapeHtml(invoice.date)} | Status: ${escapeHtml(invoice.status)} | Balance: ${formatPeso(invoice.balance)}</small></div>
-        <div><strong>${formatPeso(invoice.balance)}</strong></div>`;
+        <div>
+          <strong>${escapeHtml(invoice.invoice_number)}</strong>
+          <small>Date: ${escapeHtml(invoice.invoice_date)} | Status: ${escapeHtml(invoice.status)} | Balance: ${formatPeso(invoice.balance)}</small>
+        </div>
+        <div><strong>${formatPeso(invoice.balance)}</strong></div>
+      `;
       label.querySelector("input").addEventListener("change", updateSelectedInvoicesTotal);
       el.invoiceSelectionList.appendChild(label);
     });
+
     openModal(el.invoiceSelectionModal);
   }
 
@@ -1359,22 +1196,31 @@ async function loadInvoicesForSelectedCustomer() {
   function proceedSelectedInvoices() {
     const customer = getSelectedCustomer();
     if (!customer) return;
+
     const ids = [...el.invoiceSelectionList.querySelectorAll("input[type='checkbox']:checked")].map((cb) => cb.dataset.id);
     if (!ids.length) return alert("Select at least one invoice.");
+
     const selectedInvoices = customer.invoices.filter((inv) => ids.includes(inv.id));
-    paymentDraft = { mode: "full", amount: selectedInvoices.reduce((sum, inv) => sum + inv.balance, 0), allocations: selectedInvoices.map((inv) => ({ invoiceId: inv.id, amount: inv.balance })) };
-    closeInvoiceSelectionModal();
+    state.paymentDraft = {
+      mode: "full",
+      amount: selectedInvoices.reduce((sum, inv) => sum + inv.balance, 0),
+      allocations: selectedInvoices.map((inv) => ({ invoiceId: inv.id, amount: inv.balance }))
+    };
+
+    closeModal(el.invoiceSelectionModal);
     openPaymentMethodStep();
   }
-
-  function closeInvoiceSelectionModal() { closeModal(el.invoiceSelectionModal); }
 
   function openPartialPaymentStep() {
     const customer = getSelectedCustomer();
     if (!customer) return;
-    closePaymentTypeModal();
-    const options = customer.invoices.filter((inv) => inv.balance > 0).map((inv) => `<option value="${inv.id}">${escapeHtml(inv.number)} - Balance ${formatPeso(inv.balance)} - ${escapeHtml(inv.date)}</option>`).join("");
-    el.partialInvoiceSelect.innerHTML = options;
+
+    closeModal(el.paymentTypeModal);
+    el.partialInvoiceSelect.innerHTML = customer.invoices
+      .filter((inv) => inv.balance > 0)
+      .map((inv) => `<option value="${inv.id}">${escapeHtml(inv.invoice_number)} - Balance ${formatPeso(inv.balance)} - ${escapeHtml(inv.invoice_date)}</option>`)
+      .join("");
+
     el.partialAmountInput.value = "";
     renderPartialBalanceInfo();
     openModal(el.partialPaymentModal);
@@ -1383,37 +1229,44 @@ async function loadInvoicesForSelectedCustomer() {
   function renderPartialBalanceInfo() {
     const customer = getSelectedCustomer();
     if (!customer) return;
+
     const invoice = customer.invoices.find((inv) => inv.id === el.partialInvoiceSelect.value);
     if (!invoice) {
       el.partialBalanceInfo.textContent = "Select an invoice.";
       return;
     }
+
     const entered = num(el.partialAmountInput.value);
-    let text = `Current balance for ${invoice.number}: ${formatPeso(invoice.balance)}.`;
-    if (entered > 0) {
-      text += ` After this payment, remaining balance will be ${formatPeso(Math.max(0, invoice.balance - entered))}.`;
-    }
-    text += " Invoice stays Partially Paid until the balance becomes zero.";
+    let text = `Current balance for ${invoice.invoice_number}: ${formatPeso(invoice.balance)}.`;
+    if (entered > 0) text += ` After this payment, remaining balance will be ${formatPeso(Math.max(0, invoice.balance - entered))}.`;
+    text += " Invoice stays Partially Paid until balance becomes zero.";
     el.partialBalanceInfo.textContent = text;
   }
 
   function proceedPartialPayment() {
     const customer = getSelectedCustomer();
     if (!customer) return;
+
     const invoice = customer.invoices.find((inv) => inv.id === el.partialInvoiceSelect.value);
     const amount = num(el.partialAmountInput.value);
+
     if (!invoice) return alert("Please choose an invoice.");
     if (amount <= 0) return alert("Enter a valid partial amount.");
     if (amount > invoice.balance) return alert("Partial amount cannot be more than the invoice balance.");
-    paymentDraft = { mode: "partial", amount, allocations: [{ invoiceId: invoice.id, amount }] };
-    closePartialPaymentModal();
+
+    state.paymentDraft = {
+      mode: "partial",
+      amount,
+      allocations: [{ invoiceId: invoice.id, amount }]
+    };
+
+    closeModal(el.partialPaymentModal);
     openPaymentMethodStep();
   }
 
-  function closePartialPaymentModal() { closeModal(el.partialPaymentModal); }
-
   function openPaymentMethodStep() {
-    if (!paymentDraft) return;
+    if (!state.paymentDraft) return;
+
     el.paymentMethodSelect.value = "";
     el.chequeNumberInput.value = "";
     el.chequeDateInput.value = todayStr();
@@ -1424,12 +1277,17 @@ async function loadInvoicesForSelectedCustomer() {
     renderPaymentMethodFields();
 
     const customer = getSelectedCustomer();
-    const lines = paymentDraft.allocations.map((alloc) => {
+    const lines = state.paymentDraft.allocations.map((alloc) => {
       const invoice = customer.invoices.find((inv) => inv.id === alloc.invoiceId);
-      return `${invoice ? invoice.number : "Invoice"}: ${formatPeso(alloc.amount)}`;
+      return `${invoice ? invoice.invoice_number : "Invoice"}: ${formatPeso(alloc.amount)}`;
     });
 
-    el.paymentReviewBox.innerHTML = `Payment Type: <strong>${paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment"}</strong><br>Amount: <strong>${formatPeso(paymentDraft.amount)}</strong><br>Applied To: ${lines.join(" | ")}`;
+    el.paymentReviewBox.innerHTML = `
+      Payment Type: <strong>${state.paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment"}</strong><br>
+      Amount: <strong>${formatPeso(state.paymentDraft.amount)}</strong><br>
+      Applied To: ${escapeHtml(lines.join(" | "))}
+    `;
+
     openModal(el.paymentMethodModal);
   }
 
@@ -1443,16 +1301,15 @@ async function loadInvoicesForSelectedCustomer() {
     el.cashBankAccountWrap.classList.toggle("hidden", method !== "Cash");
   }
 
-  function savePayment() {
+  async function savePayment() {
     const customer = getSelectedCustomer();
-    if (!customer || !paymentDraft) return;
+    if (!customer || !state.paymentDraft) return;
 
     const method = el.paymentMethodSelect.value;
     if (!method) return alert("Select a payment method.");
 
     const details = {};
     let cleared = true;
-    let notice = "None";
 
     if (method === "Cash") {
       details.bankAccountNumber = el.cashBankAccountInput.value.trim();
@@ -1473,266 +1330,697 @@ async function loadInvoicesForSelectedCustomer() {
       if (!details.chequeNumber) return alert("Cheque number is required.");
       if (!details.chequeDate) return alert("Cheque date is required.");
       cleared = false;
-      notice = details.isPostDated ? "Post-Dated Cheque" : "Pending Cheque Clearance";
     }
 
-    const payment = {
-      id: uid(),
-      date: todayStr(),
-      type: paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment",
-      method,
-      details,
-      amount: round2(paymentDraft.amount),
-      allocations: paymentDraft.allocations.map((x) => ({ ...x })),
-      createdBy: getCurrentUser().username,
-      createdByRole: getCurrentUser().role,
-      createdAt: nowIso(),
-      cleared
-    };
+    const paymentDate = todayStr();
+    const amount = round2(state.paymentDraft.amount);
 
-    payment.allocations.forEach((allocation) => {
-      const invoice = customer.invoices.find((inv) => inv.id === allocation.invoiceId);
-      if (!invoice) return;
-      if (method === "Cheque") {
-        invoice.notice = notice;
-        invoice.chequeFollowUpDate = details.chequeDate;
-      } else {
-        invoice.paidAmount = round2(invoice.paidAmount + allocation.amount);
-        invoice.balance = round2(Math.max(0, invoice.total - invoice.paidAmount));
-        invoice.status = getPrimaryStatus(invoice.balance, invoice.total);
-        invoice.notice = "None";
-        invoice.chequeFollowUpDate = "";
-      }
-    });
+    const { data: payment, error: paymentError } = await supabaseClient
+      .from("payments")
+      .insert([{
+        customer_id: customer.id,
+        payment_date: paymentDate,
+        payment_type: state.paymentDraft.mode === "full" ? "Pay by Invoice" : "Partial Payment",
+        payment_method: method,
+        amount,
+        details,
+        cleared,
+        created_by: state.currentProfile.id,
+        created_by_name: state.currentProfile.username,
+        created_by_role: state.currentProfile.role
+      }])
+      .select()
+      .single();
 
-    customer.payments.push(payment);
-    logAction("Create", "Payment", `${payment.type} - ${payment.method} - ${formatPeso(payment.amount)}`, "", null, payment);
+    if (paymentError) return alert(paymentError.message);
 
-    paymentDraft = null;
-    saveState();
-    closePaymentMethodModal();
-    renderCurrentCustomerDashboard();
-    renderExecutiveView();
-    renderLogs();
-  }
+    const allocRows = state.paymentDraft.allocations.map((alloc) => ({
+      payment_id: payment.id,
+      invoice_id: alloc.invoiceId,
+      amount: alloc.amount
+    }));
 
-  function closePaymentMethodModal() { closeModal(el.paymentMethodModal); }
+    const { error: allocError } = await supabaseClient.from("payment_allocations").insert(allocRows);
+    if (allocError) return alert(allocError.message);
 
-  function deletePayment(paymentId) {
-    if (!canEditData()) return;
-    const customer = getSelectedCustomer();
-    if (!customer) return;
-    const payment = customer.payments.find((p) => p.id === paymentId);
-    if (!payment) return;
-    if (!confirm("Delete this payment and reverse its invoice allocations?")) return;
+    for (const alloc of state.paymentDraft.allocations) {
+      const invoice = state.invoices.find((x) => x.id === alloc.invoiceId);
+      if (!invoice) continue;
 
-    const reason = requireExplanationIfNeeded("delete this payment");
-    if (reason === null) return;
-    const before = clone(payment);
+      const newPaid = round2(Number(invoice.paidAmount || invoice.paid_amount || 0) + alloc.amount);
+      const newBalance = round2(Math.max(0, Number(invoice.total || invoice.total_amount || 0) - newPaid));
+      const newStatus = newBalance <= 0 ? "PAID" : newBalance < Number(invoice.total || invoice.total_amount || 0) ? "PARTIALLY_PAID" : "UNPAID";
 
-    payment.allocations.forEach((allocation) => {
-      const invoice = customer.invoices.find((inv) => inv.id === allocation.invoiceId);
-      if (!invoice) return;
-      if (payment.method === "Cheque") {
-        invoice.notice = "None";
-        invoice.chequeFollowUpDate = "";
-      } else {
-        invoice.paidAmount = round2(Math.max(0, invoice.paidAmount - allocation.amount));
-        invoice.balance = round2(Math.max(0, invoice.total - invoice.paidAmount));
-        invoice.status = getPrimaryStatus(invoice.balance, invoice.total);
-      }
-    });
+      const { error } = await supabaseClient
+        .from("invoices")
+        .update({
+          paid_amount: newPaid,
+          balance_amount: newBalance,
+          primary_status: newStatus
+        })
+        .eq("id", alloc.invoiceId);
 
-    customer.payments = customer.payments.filter((p) => p.id !== paymentId);
-    logAction("Delete", "Payment", `${payment.type} - ${payment.method}`, reason, before, null);
-    saveState();
-    renderCurrentCustomerDashboard();
-    renderExecutiveView();
-    renderLogs();
+      if (error) return alert(error.message);
+    }
+
+    await addLog("Create", "Payment", `${payment.payment_type} - ${payment.payment_method} - ${formatPeso(amount)}`, "", null, payment);
+
+    state.paymentDraft = null;
+    closeModal(el.paymentMethodModal);
+    await refreshAndRenderAll();
+    alert("Payment saved successfully.");
   }
 
   function renderPaymentTable(customer) {
     el.paymentTableBody.innerHTML = "";
+
     if (!customer.payments.length) {
-      el.paymentTableBody.innerHTML = `<tr><td colspan="${canEditData() ? 8 : 7}" class="muted">No payments yet.</td></tr>`;
+      el.paymentTableBody.innerHTML = `<tr><td colspan="7" class="muted">No payments yet.</td></tr>`;
       return;
     }
 
-    customer.payments.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).forEach((payment) => {
-      const appliedTo = payment.allocations.map((alloc) => {
-        const invoice = customer.invoices.find((inv) => inv.id === alloc.invoiceId);
-        return `${invoice ? invoice.number : "Deleted Invoice"} (${formatPeso(alloc.amount)})`;
-      }).join(", ");
+    customer.payments
+      .slice()
+      .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
+      .forEach((payment) => {
+        const appliedTo = payment.allocations.map((alloc) => {
+          const invoice = state.invoices.find((inv) => inv.id === alloc.invoice_id);
+          return `${invoice ? invoice.invoice_number : "Deleted Invoice"} (${formatPeso(alloc.amount)})`;
+        }).join(", ");
 
-      const details = formatPaymentDetails(payment);
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${escapeHtml(payment.date)}</td>
-        <td>${escapeHtml(payment.type)}</td>
-        <td>${escapeHtml(payment.method)}</td>
-        <td>${details}</td>
-        <td>${formatPeso(payment.amount)}</td>
-        <td>${escapeHtml(appliedTo || "-")}</td>
-        <td>${escapeHtml(payment.createdBy || "-")}</td>
-        ${canEditData() ? `<td><button class="btn btn-danger action-delete-payment">Delete</button></td>` : ""}`;
-      if (canEditData()) row.querySelector(".action-delete-payment").addEventListener("click", () => deletePayment(payment.id));
-      el.paymentTableBody.appendChild(row);
-    });
+        const details = formatPaymentDetails(payment);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${escapeHtml(payment.payment_date)}</td>
+          <td>${escapeHtml(payment.payment_type)}</td>
+          <td>${escapeHtml(payment.payment_method)}</td>
+          <td>${details}</td>
+          <td>${formatPeso(payment.amount)}</td>
+          <td>${escapeHtml(appliedTo || "-")}</td>
+          <td>${escapeHtml(payment.created_by_name || "-")}</td>
+        `;
+        el.paymentTableBody.appendChild(row);
+      });
   }
 
   function renderExecutiveView() {
     if (!canAccessExecutive()) return;
-    const filtered = getFilteredData();
-    el.execCustomers.textContent = String(filtered.customerCount);
-    el.execInvoices.textContent = String(filtered.invoices.length);
-    el.execInvoiced.textContent = formatPeso(filtered.totalInvoiced);
-    el.execCollected.textContent = formatPeso(filtered.totalCollected);
-    el.execOutstanding.textContent = formatPeso(filtered.totalOutstanding);
-    el.execOverdue.textContent = String(filtered.overdueInvoices.length);
-    renderMonthlyChart(filtered);
-    renderTopCustomers(filtered);
-    renderAgingTable(filtered);
-  }
 
-  function getFilteredData() {
     const from = el.execDateFrom.value || null;
     const to = el.execDateTo.value || null;
-    const invoices = [];
-    const payments = [];
-    state.customers.forEach((customer) => {
-      customer.invoices.forEach((invoice) => passesDateFilter(invoice.date, from, to) && invoices.push({ ...invoice, customerName: customer.name }));
-      customer.payments.forEach((payment) => passesDateFilter(payment.date, from, to) && payments.push({ ...payment, customerName: customer.name }));
-    });
-    return {
-      customerCount: state.customers.length,
-      invoices,
-      payments,
-      totalInvoiced: invoices.reduce((sum, item) => sum + item.total, 0),
-      totalCollected: payments.filter((p) => p.cleared !== false).reduce((sum, item) => sum + item.amount, 0),
-      totalOutstanding: invoices.reduce((sum, item) => sum + item.balance, 0),
-      overdueInvoices: invoices.filter((item) => item.balance > 0 && getDaysOpen(item.date) > 90)
-    };
-  }
 
-  function renderMonthlyChart(data) {
-    const map = new Map();
-    data.invoices.forEach((invoice) => {
-      const key = (invoice.date || "").slice(0, 7) || "Unknown";
-      if (!map.has(key)) map.set(key, { invoiced: 0, collected: 0 });
-      map.get(key).invoiced += invoice.total;
-    });
-    data.payments.filter((p) => p.cleared !== false).forEach((payment) => {
-      const key = (payment.date || "").slice(0, 7) || "Unknown";
-      if (!map.has(key)) map.set(key, { invoiced: 0, collected: 0 });
-      map.get(key).collected += payment.amount;
-    });
-    const entries = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-8);
-    const max = Math.max(1, ...entries.flatMap(([, values]) => [values.invoiced, values.collected]));
-    el.monthlyChart.innerHTML = entries.length ? entries.map(([month, values]) => `
-      <div class="bar-col"><div class="bar-stack"><div class="bar invoiced" style="height:${(values.invoiced / max) * 200}px" title="Invoiced ${formatPeso(values.invoiced)}"></div><div class="bar collected" style="height:${(values.collected / max) * 200}px" title="Collected ${formatPeso(values.collected)}"></div></div><div class="bar-label">${escapeHtml(month)}</div></div>`).join("") : `<div class="muted">No data for selected range.</div>`;
-  }
+    const invoices = state.invoices.filter((x) => passesDateFilter(x.invoice_date, from, to));
+    const payments = state.payments.filter((x) => passesDateFilter(x.payment_date, from, to));
+    const overdueInvoices = invoices.filter((x) => x.balance > 0 && getDaysOpen(x.invoice_date) > 90);
 
-  function renderTopCustomers(data) {
-    const values = state.customers.map((customer) => {
-      const outstanding = customer.invoices.filter((inv) => passesDateFilter(inv.date, el.execDateFrom.value || null, el.execDateTo.value || null)).reduce((sum, inv) => sum + inv.balance, 0);
-      return [customer.name, outstanding];
-    }).filter(([, amount]) => amount > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
-    const max = Math.max(1, ...values.map(([, amount]) => amount), 1);
-    el.topCustomersChart.innerHTML = values.length ? values.map(([name, amount]) => `
-      <div class="mini-bar-row"><div>${escapeHtml(name)}</div><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${(amount / max) * 100}%"></div></div><div><strong>${formatPeso(amount)}</strong></div></div>`).join("") : `<div class="muted">No outstanding balances.</div>`;
-  }
+    el.execCustomers.textContent = String(state.customers.length);
+    el.execInvoices.textContent = String(invoices.length);
+    el.execInvoiced.textContent = formatPeso(invoices.reduce((sum, x) => sum + Number(x.total || 0), 0));
+    el.execCollected.textContent = formatPeso(payments.filter((p) => p.cleared !== false).reduce((sum, x) => sum + Number(x.amount || 0), 0));
+    el.execOutstanding.textContent = formatPeso(invoices.reduce((sum, x) => sum + Number(x.balance || 0), 0));
+    el.execOverdue.textContent = String(overdueInvoices.length);
 
-  function renderAgingTable(data) {
     el.agingTableBody.innerHTML = "";
-    if (!data.overdueInvoices.length) {
+    if (!overdueInvoices.length) {
       el.agingTableBody.innerHTML = `<tr><td colspan="7" class="muted">No 90+ day overdue invoices.</td></tr>`;
       return;
     }
-    data.overdueInvoices.sort((a, b) => getDaysOpen(b.date) - getDaysOpen(a.date)).forEach((invoice) => {
+
+    overdueInvoices.sort((a, b) => getDaysOpen(b.invoice_date) - getDaysOpen(a.invoice_date)).forEach((invoice) => {
+      const customer = state.customers.find((c) => c.id === invoice.customer_id);
+      const tbv = state.tbvs.find((t) => t.invoice_id === invoice.id && t.status === "PENDING");
       const row = document.createElement("tr");
-      row.innerHTML = `<td>${escapeHtml(invoice.customerName)}</td><td>${escapeHtml(invoice.number)}</td><td>${escapeHtml(invoice.date)}</td><td>${getDaysOpen(invoice.date)}</td><td>${formatPeso(invoice.balance)}</td><td>${statusPill(invoice.status)}</td><td>${noticePill(invoice.notice, invoice.chequeFollowUpDate)}</td>`;
+      row.innerHTML = `
+        <td>${escapeHtml(customer?.name || "-")}</td>
+        <td>${escapeHtml(invoice.invoice_number)}</td>
+        <td>${escapeHtml(invoice.invoice_date)}</td>
+        <td>${getDaysOpen(invoice.invoice_date)}</td>
+        <td>${formatPeso(invoice.balance)}</td>
+        <td>${statusPill(invoice.status)}</td>
+        <td>${tbv ? `<span class="notice-pill notice-postdated">PENDING</span>` : "-"}</td>
+      `;
       el.agingTableBody.appendChild(row);
     });
   }
 
-  function logAction(action, entity, details, explanation, before, after) {
-    const user = getCurrentUser();
-    state.logs.unshift({
-      id: uid(), timestamp: nowIso(), username: user ? user.username : "System", role: user ? user.role : "system",
-      action, entity, details, explanation: explanation || "", before, after
+  function renderNotificationsView() {
+    if (!canAccessExecutive()) return;
+
+    el.tbvTableBody.innerHTML = "";
+    el.notificationsOverdueBody.innerHTML = "";
+
+    const tbvs = state.tbvs.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    if (!tbvs.length) {
+      el.tbvTableBody.innerHTML = `<tr><td colspan="7" class="muted">No TBV requests.</td></tr>`;
+    } else {
+      tbvs.forEach((tbv) => {
+        const invoice = state.invoices.find((x) => x.id === tbv.invoice_id);
+        const customer = state.customers.find((c) => c.id === invoice?.customer_id);
+        const row = document.createElement("tr");
+
+        let decisionButtons = "-";
+        if (tbv.status === "PENDING" && isOwner()) {
+          decisionButtons = `<button class="btn btn-light action-decide-tbv">Review</button>`;
+        }
+
+        row.innerHTML = `
+          <td>${formatDateTime(tbv.created_at)}</td>
+          <td>${escapeHtml(customer?.name || "-")}</td>
+          <td>${escapeHtml(invoice?.invoice_number || "-")}</td>
+          <td>${escapeHtml(tbv.requested_by_name || "-")} (${escapeHtml(capitalizeRole(tbv.requested_by_role || ""))})</td>
+          <td>${escapeHtml(tbv.explanation || "-")}</td>
+          <td>${escapeHtml(tbv.status)}</td>
+          <td>${decisionButtons}</td>
+        `;
+
+        const btn = row.querySelector(".action-decide-tbv");
+        if (btn) btn.addEventListener("click", () => openTbvDecisionModal(tbv.id));
+
+        el.tbvTableBody.appendChild(row);
+      });
+    }
+
+    const overdue = state.invoices.filter((x) => x.balance > 0 && getDaysOpen(x.invoice_date) > 90);
+    if (!overdue.length) {
+      el.notificationsOverdueBody.innerHTML = `<tr><td colspan="5" class="muted">No overdue invoices.</td></tr>`;
+    } else {
+      overdue.forEach((invoice) => {
+        const customer = state.customers.find((c) => c.id === invoice.customer_id);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${escapeHtml(customer?.name || "-")}</td>
+          <td>${escapeHtml(invoice.invoice_number)}</td>
+          <td>${escapeHtml(invoice.invoice_date)}</td>
+          <td>${getDaysOpen(invoice.invoice_date)}</td>
+          <td>${formatPeso(invoice.balance)}</td>
+        `;
+        el.notificationsOverdueBody.appendChild(row);
+      });
+    }
+  }
+
+  function populateReportCustomerFilter() {
+    el.reportCustomerFilter.innerHTML = `<option value="">All Customers</option>` +
+      state.customers
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`)
+        .join("");
+  }
+
+  function getReportRows() {
+    return state.invoices
+      .map((invoice) => {
+        const customer = state.customers.find((c) => c.id === invoice.customer_id);
+        const paymentDates = state.allocations
+          .filter((a) => a.invoice_id === invoice.id)
+          .map((a) => state.payments.find((p) => p.id === a.payment_id)?.payment_date)
+          .filter(Boolean)
+          .sort();
+
+        const latestPaidDate = paymentDates.length ? paymentDates[paymentDates.length - 1] : "";
+
+        return {
+          customerId: customer?.id || "",
+          customerName: customer?.name || "-",
+          invoiceNumber: invoice.invoice_number,
+          invoiceDate: invoice.invoice_date,
+          poNumber: invoice.po_number || "",
+          referenceInfo: invoice.reference_info || "",
+          total: Number(invoice.total || 0),
+          paid: Number(invoice.paidAmount || 0),
+          balance: Number(invoice.balance || 0),
+          status: invoice.status,
+          latestPaidDate
+        };
+      })
+      .filter((row) => {
+        const customerId = el.reportCustomerFilter.value;
+        const invoiceFrom = el.reportInvoiceDateFrom.value || null;
+        const invoiceTo = el.reportInvoiceDateTo.value || null;
+        const paidFrom = el.reportPaidDateFrom.value || null;
+        const paidTo = el.reportPaidDateTo.value || null;
+        const status = el.reportStatusFilter.value || "";
+
+        if (customerId && row.customerId !== customerId) return false;
+        if (invoiceFrom && row.invoiceDate < invoiceFrom) return false;
+        if (invoiceTo && row.invoiceDate > invoiceTo) return false;
+        if (status && row.status !== status) return false;
+
+        if (paidFrom || paidTo) {
+          if (!row.latestPaidDate) return false;
+          if (paidFrom && row.latestPaidDate < paidFrom) return false;
+          if (paidTo && row.latestPaidDate > paidTo) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => String(b.invoiceDate).localeCompare(String(a.invoiceDate)));
+  }
+
+  function renderReportsView() {
+    const rows = getReportRows();
+    el.reportsTableBody.innerHTML = "";
+
+    el.reportInvoicesCount.textContent = String(rows.length);
+    el.reportTotalInvoiced.textContent = formatPeso(rows.reduce((sum, x) => sum + x.total, 0));
+    el.reportTotalPaid.textContent = formatPeso(rows.reduce((sum, x) => sum + x.paid, 0));
+    el.reportTotalOutstanding.textContent = formatPeso(rows.reduce((sum, x) => sum + x.balance, 0));
+
+    if (!rows.length) {
+      el.reportsTableBody.innerHTML = `<tr><td colspan="10" class="muted">No records found.</td></tr>`;
+      return;
+    }
+
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(row.customerName)}</td>
+        <td>${escapeHtml(row.invoiceNumber)}</td>
+        <td>${escapeHtml(row.invoiceDate)}</td>
+        <td>${escapeHtml(row.poNumber || "-")}</td>
+        <td>${escapeHtml(row.referenceInfo || "-")}</td>
+        <td>${formatPeso(row.total)}</td>
+        <td>${formatPeso(row.paid)}</td>
+        <td>${formatPeso(row.balance)}</td>
+        <td>${statusPill(row.status)}</td>
+        <td>${escapeHtml(row.latestPaidDate || "-")}</td>
+      `;
+      el.reportsTableBody.appendChild(tr);
     });
+  }
+
+  function clearReportFilters() {
+    el.reportCustomerFilter.value = "";
+    el.reportInvoiceDateFrom.value = "";
+    el.reportInvoiceDateTo.value = "";
+    el.reportPaidDateFrom.value = "";
+    el.reportPaidDateTo.value = "";
+    el.reportStatusFilter.value = "";
+    renderReportsView();
+  }
+
+  function downloadReportCsv() {
+    const rows = getReportRows();
+    const headers = [
+      "Customer", "Invoice #", "Invoice Date", "PO #", "Reference", "Total", "Paid", "Balance", "Status", "Latest Paid Date"
+    ];
+
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) => [
+        csvSafe(r.customerName),
+        csvSafe(r.invoiceNumber),
+        csvSafe(r.invoiceDate),
+        csvSafe(r.poNumber),
+        csvSafe(r.referenceInfo),
+        r.total,
+        r.paid,
+        r.balance,
+        csvSafe(r.status),
+        csvSafe(r.latestPaidDate)
+      ].join(","))
+    ].join("\n");
+
+    downloadTextFile(`AKY_Daily_Report_${todayStr()}.csv`, csv, "text/csv;charset=utf-8");
+  }
+
+  function printReport() {
+    const rows = getReportRows();
+    const html = `
+      <html>
+      <head>
+        <title>AKY Daily Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+          h1 { margin: 0 0 8px; }
+          .meta { margin-bottom: 16px; color: #555; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f3f3f3; }
+        </style>
+      </head>
+      <body>
+        <h1>AKY Daily Report</h1>
+        <div class="meta">Generated on ${new Date().toLocaleString()}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th><th>Invoice #</th><th>Invoice Date</th><th>PO #</th><th>Reference</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Latest Paid Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r) => `
+              <tr>
+                <td>${escapeHtml(r.customerName)}</td>
+                <td>${escapeHtml(r.invoiceNumber)}</td>
+                <td>${escapeHtml(r.invoiceDate)}</td>
+                <td>${escapeHtml(r.poNumber || "-")}</td>
+                <td>${escapeHtml(r.referenceInfo || "-")}</td>
+                <td>${formatPeso(r.total)}</td>
+                <td>${formatPeso(r.paid)}</td>
+                <td>${formatPeso(r.balance)}</td>
+                <td>${escapeHtml(r.status)}</td>
+                <td>${escapeHtml(r.latestPaidDate || "-")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <script>window.onload = () => window.print();<\/script>
+      </body>
+      </html>
+    `;
+    openPrintWindow(html);
+  }
+
+  function openTbvModal(invoiceId) {
+    if (!canRequestTbv()) return;
+
+    const invoice = state.invoices.find((x) => x.id === invoiceId);
+    const customer = state.customers.find((c) => c.id === invoice?.customer_id);
+    if (!invoice) return;
+
+    state.selectedInvoiceForTbv = invoiceId;
+    el.tbvExplanationInput.value = "";
+    el.tbvInvoiceInfo.innerHTML = `
+      Customer: <strong>${escapeHtml(customer?.name || "-")}</strong><br>
+      Invoice #: <strong>${escapeHtml(invoice.invoice_number)}</strong><br>
+      Balance: <strong>${formatPeso(invoice.balance)}</strong>
+    `;
+    openModal(el.tbvModal);
+  }
+
+  async function saveTbvRequest() {
+    if (!canRequestTbv()) return;
+    const invoiceId = state.selectedInvoiceForTbv;
+    const explanation = el.tbvExplanationInput.value.trim();
+    if (!invoiceId) return;
+    if (!explanation) return alert("Explanation is required.");
+
+    const existingPending = state.tbvs.find((t) => t.invoice_id === invoiceId && t.status === "PENDING");
+    if (existingPending) return alert("This invoice already has a pending TBV request.");
+
+    const user = getCurrentUser();
+    const invoice = state.invoices.find((x) => x.id === invoiceId);
+
+    const { error } = await supabaseClient
+      .from("invoice_void_requests")
+      .insert([{
+        invoice_id: invoiceId,
+        requested_by: user.id,
+        requested_by_name: user.username,
+        requested_by_role: user.role,
+        explanation,
+        status: "PENDING"
+      }]);
+
+    if (error) return alert(error.message);
+
+    await addLog("Create", "TBV Request", invoice?.invoice_number || "Invoice", explanation, null, { invoice_id: invoiceId, explanation });
+
+    closeModal(el.tbvModal);
+    state.selectedInvoiceForTbv = null;
+    await refreshAndRenderAll();
+    alert("TBV request submitted.");
+  }
+
+  function openTbvDecisionModal(tbvId) {
+    if (!isOwner()) return;
+
+    const tbv = state.tbvs.find((t) => t.id === tbvId);
+    const invoice = state.invoices.find((i) => i.id === tbv?.invoice_id);
+    const customer = state.customers.find((c) => c.id === invoice?.customer_id);
+    if (!tbv) return;
+
+    state.selectedTbvForDecision = tbvId;
+    el.tbvDecisionNotesInput.value = "";
+    el.tbvDecisionInfo.innerHTML = `
+      Customer: <strong>${escapeHtml(customer?.name || "-")}</strong><br>
+      Invoice #: <strong>${escapeHtml(invoice?.invoice_number || "-")}</strong><br>
+      Explanation: <strong>${escapeHtml(tbv.explanation)}</strong>
+    `;
+    openModal(el.tbvDecisionModal);
+  }
+
+  async function decideTbv(decision) {
+    if (!isOwner()) return;
+    const tbvId = state.selectedTbvForDecision;
+    if (!tbvId) return;
+
+    const tbv = state.tbvs.find((t) => t.id === tbvId);
+    if (!tbv) return;
+
+    const notes = el.tbvDecisionNotesInput.value.trim();
+    const user = getCurrentUser();
+
+    const { error: tbvError } = await supabaseClient
+      .from("invoice_void_requests")
+      .update({
+        status: decision,
+        decision_notes: notes || null,
+        decided_by: user.id,
+        decided_by_name: user.username,
+        decided_at: new Date().toISOString()
+      })
+      .eq("id", tbvId);
+
+    if (tbvError) return alert(tbvError.message);
+
+    const invoice = state.invoices.find((i) => i.id === tbv.invoice_id);
+
+    if (decision === "APPROVED" && invoice) {
+      const { error: invoiceError } = await supabaseClient
+        .from("invoices")
+        .update({
+          is_voided: true,
+          voided_at: new Date().toISOString(),
+          voided_by: user.id
+        })
+        .eq("id", tbv.invoice_id);
+
+      if (invoiceError) return alert(invoiceError.message);
+
+      await addLog("Approve", "TBV Request", invoice.invoice_number, notes || tbv.explanation, tbv, { decision: "APPROVED" });
+      await addLog("Void", "Invoice", invoice.invoice_number, tbv.explanation, invoice, null);
+    } else if (invoice) {
+      await addLog("Deny", "TBV Request", invoice.invoice_number, notes || "", tbv, { decision: "DENIED" });
+    }
+
+    closeModal(el.tbvDecisionModal);
+    state.selectedTbvForDecision = null;
+    await refreshAndRenderAll();
+    alert(`TBV ${decision === "APPROVED" ? "approved" : "denied"} successfully.`);
+  }
+
+  function openSoaModal() {
+    const customer = getSelectedCustomer();
+    if (!customer) return alert("Please select a customer first.");
+    el.soaPreparedBy.value = state.currentProfile?.username || "";
+    el.soaAsOfDate.value = todayStr();
+    el.soaShowPayments.checked = true;
+    openModal(el.soaModal);
+  }
+
+  function generateSoa() {
+    const customer = getSelectedCustomer();
+    if (!customer) return;
+
+    const preparedBy = el.soaPreparedBy.value.trim();
+    const asOfDate = el.soaAsOfDate.value;
+    const showPayments = el.soaShowPayments.checked;
+
+    if (!preparedBy) return alert("Prepared By is required.");
+    if (!asOfDate) return alert("As of Date is required.");
+
+    const outstandingInvoices = customer.invoices
+      .filter((i) => i.balance > 0 && i.invoice_date <= asOfDate)
+      .sort((a, b) => String(a.invoice_date).localeCompare(String(b.invoice_date)));
+
+    const previousPayments = customer.payments
+      .filter((p) => p.payment_date <= asOfDate)
+      .sort((a, b) => String(a.payment_date).localeCompare(String(b.payment_date)));
+
+    const totalOutstanding = outstandingInvoices.reduce((sum, i) => sum + Number(i.balance || 0), 0);
+
+    const html = `
+      <html>
+      <head>
+        <title>Statement of Account</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 30px; color: #111; }
+          .header { text-align: center; margin-bottom: 20px; line-height: 1.5; }
+          .header strong { font-size: 18px; }
+          h2 { text-align: center; margin: 20px 0; }
+          .meta { margin-bottom: 18px; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 18px; }
+          th, td { border: 1px solid #cfcfcf; padding: 8px; text-align: left; }
+          th { background: #f4f4f4; }
+          .total { text-align: right; font-weight: bold; margin-top: 10px; }
+          .signatures { margin-top: 50px; display: flex; justify-content: space-between; gap: 40px; }
+          .sigbox { width: 45%; }
+          .line { margin-top: 45px; border-top: 1px solid #111; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <strong>AKY GROUP OF COMPANIES, INC.</strong><br>
+          Sitio Bantud, Brgy. Manoc-Manoc Boracay Malay, Aklan<br>
+          Tel. (036) 288-4218 / 288-5369<br>
+          E-mail address: akygroupofcompaniesinc@gmail.com
+        </div>
+
+        <h2>STATEMENT OF ACCOUNT</h2>
+
+        <div class="meta">
+          <strong>Customer:</strong> ${escapeHtml(customer.name)}<br>
+          <strong>As of Date:</strong> ${escapeHtml(asOfDate)}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice Date</th>
+              <th>Invoice #</th>
+              <th>PO #</th>
+              <th>Reference</th>
+              <th>Total Amount</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              outstandingInvoices.length
+                ? outstandingInvoices.map((i) => `
+                  <tr>
+                    <td>${escapeHtml(i.invoice_date)}</td>
+                    <td>${escapeHtml(i.invoice_number)}</td>
+                    <td>${escapeHtml(i.po_number || "-")}</td>
+                    <td>${escapeHtml(i.reference_info || "-")}</td>
+                    <td>${formatPeso(i.total)}</td>
+                    <td>${formatPeso(i.paidAmount)}</td>
+                    <td>${formatPeso(i.balance)}</td>
+                    <td>${escapeHtml(i.status)}</td>
+                  </tr>
+                `).join("")
+                : `<tr><td colspan="8">No outstanding invoices.</td></tr>`
+            }
+          </tbody>
+        </table>
+
+        ${showPayments ? `
+          <h3>Previous Payments</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Payment Date</th>
+                <th>Type</th>
+                <th>Method</th>
+                <th>Amount</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                previousPayments.length
+                  ? previousPayments.map((p) => `
+                    <tr>
+                      <td>${escapeHtml(p.payment_date)}</td>
+                      <td>${escapeHtml(p.payment_type)}</td>
+                      <td>${escapeHtml(p.payment_method)}</td>
+                      <td>${formatPeso(p.amount)}</td>
+                      <td>${formatPaymentDetails(p)}</td>
+                    </tr>
+                  `).join("")
+                  : `<tr><td colspan="5">No previous payments found.</td></tr>`
+              }
+            </tbody>
+          </table>
+        ` : ""}
+
+        <div class="total">TOTAL OUTSTANDING: ${formatPeso(totalOutstanding)}</div>
+
+        <div class="signatures">
+          <div class="sigbox">
+            <div><strong>Prepared by:</strong> ${escapeHtml(preparedBy)}</div>
+          </div>
+          <div class="sigbox">
+            <div class="line">Received by:</div>
+          </div>
+        </div>
+
+        <script>window.onload = () => window.print();<\/script>
+      </body>
+      </html>
+    `;
+
+    closeModal(el.soaModal);
+    openPrintWindow(html);
   }
 
   function renderLogs() {
     if (!canAccessLogs()) return;
+
     el.logTableBody.innerHTML = "";
     if (!state.logs.length) {
       el.logTableBody.innerHTML = `<tr><td colspan="7" class="muted">No log entries yet.</td></tr>`;
       return;
     }
+
     state.logs.forEach((log) => {
       const row = document.createElement("tr");
-      row.innerHTML = `<td>${formatDateTime(log.timestamp)}</td><td>${escapeHtml(log.username)}</td><td>${escapeHtml(capitalizeRole(log.role))}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.entity)}</td><td>${escapeHtml(log.details || "-")}</td><td>${escapeHtml(log.explanation || "-")}</td>`;
+      row.innerHTML = `
+        <td>${formatDateTime(log.created_at)}</td>
+        <td>${escapeHtml(log.username || "-")}</td>
+        <td>${escapeHtml(capitalizeRole(log.role || "-"))}</td>
+        <td>${escapeHtml(log.action || "-")}</td>
+        <td>${escapeHtml(log.entity || "-")}</td>
+        <td>${escapeHtml(log.details || "-")}</td>
+        <td>${escapeHtml(log.explanation || "-")}</td>
+      `;
       el.logTableBody.appendChild(row);
     });
   }
 
-  function requireExplanationIfNeeded(actionText) {
-    const user = getCurrentUser();
-    if (!user) return "";
-    if (user.role === "admin") {
-      const reason = prompt(`Explanation required. Please explain why you need to ${actionText}.`);
-      if (reason === null) return null;
-      if (!reason.trim()) {
-        alert("Explanation is required for admin changes.");
-        return null;
-      }
-      return reason.trim();
-    }
-    return "";
+  async function addLog(action, entity, details, explanation, oldData, newData) {
+    await supabaseClient.from("activity_logs").insert([{
+      user_id: state.currentProfile?.id || null,
+      username: state.currentProfile?.username || null,
+      role: state.currentProfile?.role || null,
+      action,
+      entity,
+      details: details || "",
+      explanation: explanation || "",
+      old_data: oldData || null,
+      new_data: newData || null
+    }]);
   }
 
-  function openUserModal() {
-    if (!isOwner()) return;
-    el.newUsername.value = "";
-    el.newPassword.value = "";
-    el.newUserRole.value = "user";
-    openModal(el.userModal);
-  }
-
-  function closeUserModal() { closeModal(el.userModal); }
-
-  function saveUser() {
-    if (!isOwner()) return;
-    const username = el.newUsername.value.trim();
-    const password = el.newPassword.value.trim();
-    const role = el.newUserRole.value;
-    if (!username) return alert("Username is required.");
-    const passwordError = validatePassword(password);
-    if (passwordError) return alert(passwordError);
-    if (state.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) return alert("Username already exists.");
-
-    const user = { id: uid(), username, password, role, active: true, tempPassword: true, createdAt: nowIso() };
-    state.users.push(user);
-    logAction("Create", "User", `${username} (${capitalizeRole(role)})`, "", null, user);
-    saveState();
-    closeUserModal();
-    renderUsersTable();
+  async function refreshAndRenderAll() {
+    await loadAllData();
+    renderCustomerList();
+    renderCurrentCustomerDashboard();
+    renderExecutiveView();
+    renderNotificationsView();
     renderLogs();
+    renderReportsView();
   }
 
-  function renderUsersTable() {
-    if (!isOwner()) return;
-    el.usersTableBody.innerHTML = state.users.slice().sort((a, b) => a.username.localeCompare(b.username)).map((user) => `
-      <tr><td>${escapeHtml(user.username)}</td><td>${escapeHtml(capitalizeRole(user.role))}</td><td>${user.active ? "Active" : "Inactive"}</td><td>${user.tempPassword ? "Yes" : "No"}</td></tr>`).join("");
+  function openModal(node) {
+    node.style.display = "flex";
+  }
+
+  function closeModal(node) {
+    node.style.display = "none";
   }
 
   function formatPaymentDetails(payment) {
-    if (payment.method === "Cash") return escapeHtml(`Deposit to: ${payment.details.bankAccountNumber || "-"}`);
-    if (payment.method === "Online") return escapeHtml(`Ref: ${payment.details.referenceNumber || "-"} | ${payment.details.platformName || "-"}`);
-    if (payment.method === "Cheque") {
-      const text = `Cheque #: ${payment.details.chequeNumber || "-"} | Date: ${payment.details.chequeDate || "-"} | ${payment.details.isPostDated ? "Post-Dated" : "Pending Clearance"}`;
-      return escapeHtml(text);
+    const details = payment.details || {};
+    if (payment.payment_method === "Cash") return escapeHtml(`Deposit to: ${details.bankAccountNumber || "-"}`);
+    if (payment.payment_method === "Online") return escapeHtml(`Ref: ${details.referenceNumber || "-"} | ${details.platformName || "-"}`);
+    if (payment.payment_method === "Cheque") {
+      return escapeHtml(`Cheque #: ${details.chequeNumber || "-"} | Date: ${details.chequeDate || "-"}${details.isPostDated ? " | Post-Dated" : ""}`);
     }
     return "-";
   }
@@ -1740,13 +2028,6 @@ async function loadInvoicesForSelectedCustomer() {
   function statusPill(status) {
     const cls = status === "Paid" ? "status-paid" : status === "Partially Paid" ? "status-partial" : "status-unpaid";
     return `<span class="status-pill ${cls}">${escapeHtml(status)}</span>`;
-  }
-
-  function noticePill(notice, date) {
-    if (!notice || notice === "None") return `<span class="notice-none">-</span>`;
-    const cls = notice === "Post-Dated Cheque" ? "notice-postdated" : "notice-pending";
-    const label = date ? `${notice} (${date})` : notice;
-    return `<span class="notice-pill ${cls}">${escapeHtml(label)}</span>`;
   }
 
   function getPrimaryStatus(balance, total) {
@@ -1762,20 +2043,86 @@ async function loadInvoicesForSelectedCustomer() {
     return true;
   }
 
-  function byId(id) { return document.getElementById(id); }
-  function openModal(node) { node.style.display = "flex"; }
-  function closeModal(node) { node.style.display = "none"; }
-  function uid() { return "id_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
-  function nowIso() { return new Date().toISOString(); }
-  function todayStr() { return new Date().toISOString().split("T")[0]; }
-  function num(value) { const n = parseFloat(value); return Number.isFinite(n) ? n : 0; }
-  function round2(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
-  function clone(value) { return JSON.parse(JSON.stringify(value)); }
-  function formatPeso(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(round2(value || 0)); }
-  function formatNumber(value) { const n = Number(value || 0); return Number.isInteger(n) ? new Intl.NumberFormat("en-PH").format(n) : new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
-  function getDaysOpen(dateString) { return Math.max(0, Math.floor((Date.now() - new Date(dateString + "T00:00:00").getTime()) / 86400000)); }
-  function formatDateTime(iso) { return new Date(iso).toLocaleString(); }
-  function capitalizeRole(str) { return String(str || "").split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("-"); }
-  function escapeHtml(value) { return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
-  function escapeAttr(value) { return escapeHtml(value); }
+  function openPrintWindow(html) {
+    const win = window.open("", "_blank");
+    if (!win) {
+      alert("Please allow popups for printing/downloading documents.");
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }
+
+  function downloadTextFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function csvSafe(value) {
+    const text = String(value ?? "");
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function todayStr() {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  function num(value) {
+    const n = parseFloat(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function round2(value) {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  function formatPeso(value) {
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(round2(Number(value || 0)));
+  }
+
+  function formatNumber(value) {
+    const n = Number(value || 0);
+    return Number.isInteger(n)
+      ? new Intl.NumberFormat("en-PH").format(n)
+      : new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  }
+
+  function getDaysOpen(dateString) {
+    return Math.max(0, Math.floor((Date.now() - new Date(dateString + "T00:00:00").getTime()) / 86400000));
+  }
+
+  function formatDateTime(iso) {
+    return new Date(iso).toLocaleString();
+  }
+
+  function capitalizeRole(str) {
+    return String(str || "")
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("-");
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
 })();

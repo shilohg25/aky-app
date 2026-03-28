@@ -20,55 +20,7 @@ alert("SCRIPT LOADED");
   const el = mapElements();
   bindEvents();
   bootstrap();
-async function loadCustomersFromSupabase() {
-  const { data, error } = await supabaseClient
-    .from("customers")
-    .select("*")
-    .order("name", { ascending: true });
 
-  if (error) {
-    alert("Load customers failed: " + error.message);
-    return;
-  }
-
-  state.customers = (data || []).map((customer) => ({
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone,
-    email: customer.email || "",
-    contacts: [],
-    invoices: [],
-    payments: [],
-    createdAt: customer.created_at,
-    updatedAt: customer.updated_at
-  }));
-
-  renderCustomerList();
-}
-
-async function loadSelectedCustomerDetails() {
-  if (!selectedCustomerId) return;
-
-  const customer = state.customers.find((c) => c.id === selectedCustomerId);
-  if (!customer) return;
-
-  const { data: contacts, error: contactsError } = await supabaseClient
-    .from("customer_contacts")
-    .select("*")
-    .eq("customer_id", selectedCustomerId)
-    .order("created_at", { ascending: true });
-
-  if (contactsError) {
-    alert("Load contacts failed: " + contactsError.message);
-    return;
-  }
-
-  customer.contacts = (contacts || []).map((c) => ({
-    name: c.contact_name || "",
-    phone: c.phone || "",
-    email: c.email || ""
-  }));
-}
   function mapElements() {
     return {
       loginScreen: byId("loginScreen"),
@@ -284,88 +236,88 @@ async function loadSelectedCustomerDetails() {
     });
   }
 
-async function bootstrap() {
-  const { data, error } = await supabaseClient.auth.getSession();
+  async function bootstrap() {
+    const { data, error } = await supabaseClient.auth.getSession();
 
-  if (error) {
-    console.error(error);
-    showLogin();
-    return;
+    if (error) {
+      console.error(error);
+      showLogin();
+      return;
+    }
+
+    const session = data.session;
+
+    if (!session || !session.user) {
+      showLogin();
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
+
+    if (profileError || !profile) {
+      showLogin();
+      return;
+    }
+
+    window.currentProfile = profile;
+    state.currentUserId = session.user.id;
+    saveState();
+    showApp();
   }
 
-  const session = data.session;
-
-  if (!session || !session.user) {
-    showLogin();
-    return;
-  }
-
-  const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", session.user.id)
-    .single();
-
-  if (profileError || !profile) {
-    showLogin();
-    return;
-  }
-
-  window.currentProfile = profile;
-  state.currentUserId = session.user.id;
-  saveState();
-  showApp();
-}
   async function loadCustomersFromSupabase() {
-  const { data, error } = await supabaseClient
-    .from("customers")
-    .select("*")
-    .order("name", { ascending: true });
+    const { data, error } = await supabaseClient
+      .from("customers")
+      .select("*")
+      .order("name", { ascending: true });
 
-  if (error) {
-    alert("Load customers failed: " + error.message);
-    return;
+    if (error) {
+      alert("Load customers failed: " + error.message);
+      return;
+    }
+
+    state.customers = (data || []).map((customer) => ({
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || "",
+      contacts: [],
+      invoices: [],
+      payments: [],
+      createdAt: customer.created_at,
+      updatedAt: customer.updated_at
+    }));
+
+    renderCustomerList();
   }
 
-  state.customers = (data || []).map((customer) => ({
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone,
-    email: customer.email || "",
-    contacts: [],
-    invoices: [],
-    payments: [],
-    createdAt: customer.created_at,
-    updatedAt: customer.updated_at
-  }));
+  async function loadSelectedCustomerDetails() {
+    if (!selectedCustomerId) return;
 
-  renderCustomerList();
-}
+    const customer = state.customers.find((c) => c.id === selectedCustomerId);
+    if (!customer) return;
 
-async function loadSelectedCustomerDetails() {
-  if (!selectedCustomerId) return;
+    const { data: contacts, error: contactsError } = await supabaseClient
+      .from("customer_contacts")
+      .select("*")
+      .eq("customer_id", selectedCustomerId)
+      .order("created_at", { ascending: true });
 
-  const customer = state.customers.find((c) => c.id === selectedCustomerId);
-  if (!customer) return;
+    if (contactsError) {
+      alert("Load contacts failed: " + contactsError.message);
+      return;
+    }
 
-  const { data: contacts, error: contactsError } = await supabaseClient
-    .from("customer_contacts")
-    .select("*")
-    .eq("customer_id", selectedCustomerId)
-    .order("created_at", { ascending: true });
-
-  if (contactsError) {
-    alert("Load contacts failed: " + contactsError.message);
-    return;
+    customer.contacts = (contacts || []).map((c) => ({
+      name: c.contact_name || "",
+      phone: c.phone || "",
+      email: c.email || ""
+    }));
   }
-
-  customer.contacts = (contacts || []).map((c) => ({
-    name: c.contact_name || "",
-    phone: c.phone || "",
-    email: c.email || ""
-  }));
-}
-}
 
   function loadState() {
     try {

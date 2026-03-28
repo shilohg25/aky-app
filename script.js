@@ -264,8 +264,9 @@ alert("SCRIPT LOADED");
     }
 
     window.currentProfile = profile;
-    state.currentUserId = session.user.id;
-    saveState();
+state.currentUserId = session.user.id;
+saveState();
+showApp();
     
   }
 
@@ -442,17 +443,17 @@ async function login() {
     }
 
     window.currentProfile = profile;
-    state.currentUserId = user.id;
-    saveState();
+state.currentUserId = user.id;
+saveState();
 
-    el.loginMessage.textContent = "";
-    el.loginPassword.value = "";
+el.loginMessage.textContent = "";
+el.loginPassword.value = "";
 
-  
+showApp();
 
-    if (profile.must_change_password) {
-      openChangePasswordModal(true);
-    }
+if (profile.must_change_password) {
+  openChangePasswordModal(true);
+}
   } catch (err) {
     console.error(err);
     el.loginMessage.textContent = err.message || "Unexpected error.";
@@ -770,7 +771,31 @@ async function showApp() {
     editingCustomerId = null;
     await loadCustomersFromSupabase();
     await loadSelectedCustomerDetails();
-    async function loadInvoicesForSelectedCustomer() {
+    async function loadSelectedCustomerDetails() {
+  if (!selectedCustomerId) return;
+
+  const customer = state.customers.find((c) => c.id === selectedCustomerId);
+  if (!customer) return;
+
+  const { data: contacts, error: contactsError } = await supabaseClient
+    .from("customer_contacts")
+    .select("*")
+    .eq("customer_id", selectedCustomerId)
+    .order("created_at", { ascending: true });
+
+  if (contactsError) {
+    alert("Load contacts failed: " + contactsError.message);
+    return;
+  }
+
+  customer.contacts = (contacts || []).map((c) => ({
+    name: c.contact_name || "",
+    phone: c.phone || "",
+    email: c.email || ""
+  }));
+}
+
+async function loadInvoicesForSelectedCustomer() {
   if (!selectedCustomerId) return;
 
   const customer = state.customers.find((c) => c.id === selectedCustomerId);

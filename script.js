@@ -234,13 +234,38 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     });
   }
 
-  function bootstrap() {
-    if (state.currentUserId && getCurrentUser()) {
-      showApp();
-      return;
-    }
+async function bootstrap() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error(error);
     showLogin();
+    return;
   }
+
+  const session = data.session;
+
+  if (!session || !session.user) {
+    showLogin();
+    return;
+  }
+
+  const { data: profile, error: profileError } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+  if (profileError || !profile) {
+    showLogin();
+    return;
+  }
+
+  window.currentProfile = profile;
+  state.currentUserId = session.user.id;
+  saveState();
+  showApp();
+}
 
   function loadState() {
     try {
@@ -296,9 +321,19 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     };
   }
 
-  function getCurrentUser() {
-    return state.users.find((u) => u.id === state.currentUserId) || null;
+function getCurrentUser() {
+  if (window.currentProfile) {
+    return {
+      id: window.currentProfile.id,
+      username: window.currentProfile.username,
+      role: window.currentProfile.role,
+      tempPassword: window.currentProfile.must_change_password,
+      active: window.currentProfile.is_active
+    };
   }
+
+  return state.users.find((u) => u.id === state.currentUserId) || null;
+}
 
   function hasRole(...roles) {
     const user = getCurrentUser();
@@ -337,27 +372,29 @@ async function login() {
     return;
   }
 
-  window.currentProfile = profile;
+window.currentProfile = profile;
 
-  el.loginMessage.textContent = "";
-  el.loginPassword.value = "";
+el.loginMessage.textContent = "";
+el.loginPassword.value = "";
 
-  state.currentUserId = user.id;
-  saveState();
+state.currentUserId = user.id;
+saveState();
 
-  showApp();
+showApp();
 
-  if (profile.must_change_password) {
-    openChangePasswordModal(true);
-  }
+if (profile.must_change_password) {
+  openChangePasswordModal(true);
+}
 }
 
-  function logout() {
-    state.currentUserId = null;
-    saveState();
-    selectedCustomerId = null;
-    showLogin();
-  }
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.currentProfile = null;
+  state.currentUserId = null;
+  saveState();
+  selectedCustomerId = null;
+  showLogin();
+}
 
   function openChangePasswordModal(force = false) {
     const user = getCurrentUser();
@@ -377,23 +414,43 @@ async function login() {
     return "";
   }
 
-  function saveOwnPassword() {
-    const password = el.newOwnPassword.value;
-    const confirm = el.confirmOwnPassword.value;
-    const user = getCurrentUser();
-    if (!user) return;
+async function saveOwnPassword() {
+  const password = el.newOwnPassword.value;
+  const confirm = el.confirmOwnPassword.value;
+  const user = getCurrentUser();
+  if (!user) return;
 
-    const error = validatePassword(password);
-    if (error) return alert(error);
-    if (password !== confirm) return alert("Passwords do not match.");
+  const error = validatePassword(password);
+  if (error) return alert(error);
+  if (password !== confirm) return alert("Passwords do not match.");
 
-    user.password = password;
-    user.tempPassword = false;
-    saveState();
-    closeModal(el.changePasswordModal);
-    renderCurrentUser();
-    alert("Password changed successfully.");
+  const { error: authError } = await supabaseClient.auth.updateUser({
+    password
+  });
+
+  if (authError) {
+    alert(authError.message);
+    return;
   }
+
+  const { error: profileError } = await supabaseClient
+    .from("profiles")
+    .update({ must_change_password: false })
+    .eq("id", user.id);
+
+  if (profileError) {
+    alert(profileError.message);
+    return;
+  }
+
+  if (window.currentProfile) {
+    window.currentProfile.must_change_password = false;
+  }
+
+  closeModal(el.changePasswordModal);
+  renderCurrentUser();
+  alert("Password changed successfully.");
+}
 
   function showLogin() {
     el.loginScreen.classList.remove("hidden");

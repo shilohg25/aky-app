@@ -10,29 +10,55 @@
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <div class="aky-brand login-brand">
-        <div class="aky-sign"><div class="aky-stripes"></div><div class="aky-text">AKY</div></div>
+        <div class="aky-sign">
+          <div class="aky-stripes"></div>
+          <div class="aky-text">AKY</div>
+        </div>
       </div>
       <h2>Sign in</h2>
       <p class="muted">Use your assigned email and password.</p>
+
       <div class="form-grid one-col">
-        <div class="field"><label for="loginUsername">Email</label><input id="loginUsername" type="text" autocomplete="username" /></div>
-        <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" /></div>
+        <div class="field">
+          <label for="loginUsername">Email</label>
+          <input id="loginUsername" type="text" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" />
+        </div>
       </div>
+
       <button id="loginBtn" class="btn btn-primary wide-btn">Login</button>
       <div id="loginMessage" class="message"></div>
+
+      <div class="login-help">
+        <strong>Role summary</strong><br />
+        Owner = full control<br />
+        Co-Owner = full visibility, no edits<br />
+        Admin = create/edit operational data, no delete, note required for edits<br />
+        User = basic access, data entry, reports, and statement of account
+      </div>
     </div>
   </div>
 
   <div id="appShell" class="app-shell hidden">
     <aside class="sidebar">
-      <div class="aky-brand"><div class="aky-sign"><div class="aky-stripes"></div><div class="aky-text">AKY</div></div></div>
+      <div class="aky-brand">
+        <div class="aky-sign">
+          <div class="aky-stripes"></div>
+          <div class="aky-text">AKY</div>
+        </div>
+      </div>
 
-      <div class="panel user-panel"><div id="currentUserInfo" class="current-user"></div></div>
+      <div class="panel user-panel">
+        <div id="currentUserInfo" class="current-user"></div>
+      </div>
 
       <div class="panel nav-panel">
         <button id="navCustomers" class="btn nav-btn active">Customers</button>
         <button id="navExecutive" class="btn nav-btn executive-access hidden">Executive View</button>
-        <button id="navNotifications" class="btn nav-btn executive-access hidden">Notifications</button>
+        <button id="navNotifications" class="btn nav-btn notification-access hidden">Notifications</button>
         <button id="navReports" class="btn nav-btn">Daily Reports</button>
         <button id="navLogs" class="btn nav-btn log-access hidden">Log History</button>
         <button id="openChangePasswordBtn" class="btn btn-light wide-btn">Change Password</button>
@@ -71,10 +97,11 @@
               </div>
 
               <div class="dashboard-actions">
-                <button id="createInvoiceBtn" class="btn btn-primary edit-access">Create Invoice</button>
-                <button id="makePaymentBtn" class="btn btn-secondary">Make Payment</button>
+                <button id="createInvoiceBtn" class="btn btn-primary invoice-create-access hidden">Create Invoice</button>
+                <button id="makePaymentBtn" class="btn btn-secondary payment-create-access hidden">Make Payment</button>
                 <button id="createSOABtn" class="btn btn-light">Create Statement of Account</button>
-                <button id="editCustomerBtn" class="btn btn-light edit-access">Edit Customer</button>
+                <button id="editCustomerBtn" class="btn btn-light customer-edit-access hidden">Edit Customer</button>
+                <button id="deleteCustomerBtn" class="btn btn-danger owner-access hidden">Delete Customer</button>
               </div>
             </div>
             <div id="overdueAlertBox" class="alert-box hidden"></div>
@@ -152,7 +179,7 @@
               <button id="clearExecFilterBtn" class="btn btn-light">Clear</button>
             </div>
           </div>
-          <p class="muted">Owner and co-owner can view this section.</p>
+          <p class="muted">Visible to owner and co-owner only.</p>
         </div>
 
         <div class="summary-grid exec-grid">
@@ -188,7 +215,7 @@
       <section id="notificationsView" class="view-section hidden">
         <div class="panel">
           <h2 class="panel-title">Notifications</h2>
-          <p class="muted">Owner and co-owner can see 90+ day invoices and TBV requests here. Only owner can approve or deny TBV.</p>
+          <p class="muted">Owner and co-owner can see 90+ overdue invoices and TBV requests. Only owner can approve or deny TBV.</p>
         </div>
 
         <div class="panel">
@@ -239,7 +266,7 @@
               <button id="printReportBtn" class="btn btn-light">Print</button>
             </div>
           </div>
-          <p class="muted">All users can filter and download reports. Downloaded files can be opened on any computer with a browser or spreadsheet app.</p>
+          <p class="muted">All roles can filter, download, and print these reports.</p>
         </div>
 
         <div class="panel">
@@ -274,6 +301,7 @@
               </select>
             </div>
           </div>
+
           <div class="btn-row report-actions">
             <button id="applyReportFilterBtn" class="btn btn-primary">Apply Filters</button>
             <button id="clearReportFilterBtn" class="btn btn-light">Clear</button>
@@ -340,40 +368,89 @@
   <!-- CUSTOMER MODAL -->
   <div id="customerModal" class="modal">
     <div class="modal-content">
-      <div class="modal-header"><h3 id="customerModalTitle">Add Customer</h3><button id="closeCustomerModalBtn" class="icon-btn" type="button">&times;</button></div>
-      <div class="form-grid two-col">
-        <div class="field"><label for="customerFormName">Customer Name *</label><input id="customerFormName" type="text" /></div>
-        <div class="field"><label for="customerFormPhone">Phone Number *</label><input id="customerFormPhone" type="text" /></div>
-        <div class="field"><label for="customerFormEmail">Email</label><input id="customerFormEmail" type="email" /></div>
+      <div class="modal-header">
+        <h3 id="customerModalTitle">Add Customer</h3>
+        <button id="closeCustomerModalBtn" class="icon-btn" type="button">&times;</button>
       </div>
+
+      <div id="customerEditNoteWrap" class="field hidden">
+        <label for="customerEditRequiredNote">Edit Note</label>
+        <textarea id="customerEditRequiredNote" rows="3" placeholder="Admin: required. Owner: optional. Explain what changed and why."></textarea>
+      </div>
+
+      <div class="form-grid two-col">
+        <div class="field">
+          <label for="customerFormName">Customer Name *</label>
+          <input id="customerFormName" type="text" />
+        </div>
+        <div class="field">
+          <label for="customerFormPhone">Phone Number *</label>
+          <input id="customerFormPhone" type="text" />
+        </div>
+        <div class="field">
+          <label for="customerFormEmail">Email</label>
+          <input id="customerFormEmail" type="email" />
+        </div>
+      </div>
+
       <div class="panel soft-panel">
-        <div class="panel-row"><h4 class="panel-title small-title">Additional Contacts</h4><button id="addContactBtn" class="btn btn-secondary" type="button">Add Contact</button></div>
+        <div class="panel-row">
+          <h4 class="panel-title small-title">Additional Contacts</h4>
+          <button id="addContactBtn" class="btn btn-secondary" type="button">Add Contact</button>
+        </div>
         <div id="additionalContacts"></div>
       </div>
-      <div class="modal-footer"><button id="saveCustomerBtn" class="btn btn-primary" type="button">Save Customer</button></div>
+
+      <div class="modal-footer">
+        <button id="saveCustomerBtn" class="btn btn-primary" type="button">Save Customer</button>
+      </div>
     </div>
   </div>
 
   <!-- INVOICE MODAL -->
   <div id="invoiceModal" class="modal">
     <div class="modal-content large-modal">
-      <div class="modal-header"><h3 id="invoiceModalTitle">Create Invoice</h3><button id="closeInvoiceModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3 id="invoiceModalTitle">Create Invoice</h3>
+        <button id="closeInvoiceModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
 
       <div id="editNoteWrap" class="field hidden">
-        <label for="editRequiredNote">Edit Note *</label>
-        <textarea id="editRequiredNote" rows="3" placeholder="Required when editing an invoice. Explain what was changed and why."></textarea>
+        <label for="editRequiredNote">Edit Note</label>
+        <textarea id="editRequiredNote" rows="3" placeholder="Admin: required. Owner: optional. Explain what changed and why."></textarea>
       </div>
 
       <div class="form-grid two-col">
-        <div class="field"><label for="invoiceNumber">Invoice Number *</label><input id="invoiceNumber" type="text" /></div>
-        <div class="field"><label for="invoiceDate">Date *</label><input id="invoiceDate" type="date" /></div>
-        <div class="field"><label for="poNumber">PO #</label><input id="poNumber" type="text" /></div>
-        <div class="field"><label for="referenceInfo">Reference Info</label><input id="referenceInfo" type="text" /></div>
+        <div class="field">
+          <label for="invoiceNumber">Invoice Number *</label>
+          <input id="invoiceNumber" type="text" />
+        </div>
+        <div class="field">
+          <label for="invoiceDate">Date *</label>
+          <input id="invoiceDate" type="date" />
+        </div>
+        <div class="field">
+          <label for="poNumber">PO #</label>
+          <input id="poNumber" type="text" />
+        </div>
+        <div class="field">
+          <label for="referenceInfo">Reference Info</label>
+          <input id="referenceInfo" type="text" />
+        </div>
       </div>
 
       <div class="panel soft-panel">
-        <div class="panel-row"><h4 class="panel-title small-title">Line Items</h4><button id="addLineBtn" class="btn btn-secondary" type="button">Add Line</button></div>
-        <div class="line-items-labels"><span>Product Name</span><span>Quantity</span><span>Price</span><span>Line Total</span><span></span></div>
+        <div class="panel-row">
+          <h4 class="panel-title small-title">Line Items</h4>
+          <button id="addLineBtn" class="btn btn-secondary" type="button">Add Line</button>
+        </div>
+        <div class="line-items-labels">
+          <span>Product Name</span>
+          <span>Quantity</span>
+          <span>Price</span>
+          <span>Line Total</span>
+          <span></span>
+        </div>
         <div id="lineItemsContainer"></div>
       </div>
 
@@ -387,7 +464,10 @@
   <!-- INVOICE VIEW -->
   <div id="invoiceViewModal" class="modal">
     <div class="modal-content large-modal">
-      <div class="modal-header"><h3>Invoice Details</h3><button id="closeInvoiceViewModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Invoice Details</h3>
+        <button id="closeInvoiceViewModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div id="invoiceViewContent"></div>
     </div>
   </div>
@@ -395,10 +475,19 @@
   <!-- PAYMENT TYPE -->
   <div id="paymentTypeModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>Make Payment</h3><button id="closePaymentTypeModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Make Payment</h3>
+        <button id="closePaymentTypeModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div class="payment-choice-grid">
-        <button id="payByInvoiceBtn" class="payment-choice-btn" type="button"><strong>Pay by Invoice</strong><span>Choose one or more open invoices and pay their full current balances.</span></button>
-        <button id="partialPaymentBtn" class="payment-choice-btn" type="button"><strong>Partial Payment</strong><span>Apply part of a payment to a selected open invoice.</span></button>
+        <button id="payByInvoiceBtn" class="payment-choice-btn" type="button">
+          <strong>Pay by Invoice</strong>
+          <span>Choose one or more open invoices and pay their current balances.</span>
+        </button>
+        <button id="partialPaymentBtn" class="payment-choice-btn" type="button">
+          <strong>Partial Payment</strong>
+          <span>Apply part of a payment to a selected open invoice. The invoice remains Partially Paid until balance reaches zero.</span>
+        </button>
       </div>
     </div>
   </div>
@@ -406,7 +495,10 @@
   <!-- INVOICE SELECTION -->
   <div id="invoiceSelectionModal" class="modal">
     <div class="modal-content large-modal">
-      <div class="modal-header"><h3>Pay by Invoice</h3><button id="closeInvoiceSelectionModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Pay by Invoice</h3>
+        <button id="closeInvoiceSelectionModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div id="invoiceSelectionList" class="selection-list"></div>
       <div class="modal-footer between">
         <div class="total-box">Selected Total: <strong id="selectedInvoicesTotal">₱0</strong></div>
@@ -421,20 +513,35 @@
   <!-- PARTIAL PAYMENT -->
   <div id="partialPaymentModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>Partial Payment</h3><button id="closePartialPaymentModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Partial Payment</h3>
+        <button id="closePartialPaymentModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div class="form-grid one-col">
-        <div class="field"><label for="partialInvoiceSelect">Choose Invoice *</label><select id="partialInvoiceSelect"></select></div>
-        <div class="field"><label for="partialAmountInput">Partial Amount *</label><input id="partialAmountInput" type="number" min="0" step="0.01" /></div>
+        <div class="field">
+          <label for="partialInvoiceSelect">Choose Invoice *</label>
+          <select id="partialInvoiceSelect"></select>
+        </div>
+        <div class="field">
+          <label for="partialAmountInput">Partial Amount *</label>
+          <input id="partialAmountInput" type="number" min="0" step="0.01" />
+        </div>
         <div id="partialBalanceInfo" class="info-box"></div>
       </div>
-      <div class="modal-footer"><button id="proceedPartialPaymentBtn" class="btn btn-primary" type="button">Proceed</button></div>
+      <div class="modal-footer">
+        <button id="proceedPartialPaymentBtn" class="btn btn-primary" type="button">Proceed</button>
+      </div>
     </div>
   </div>
 
   <!-- PAYMENT DETAILS -->
   <div id="paymentMethodModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>Payment Details</h3><button id="closePaymentMethodModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Payment Details</h3>
+        <button id="closePaymentMethodModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+
       <div class="form-grid one-col">
         <div class="field">
           <label for="paymentMethodSelect">Payment Method *</label>
@@ -445,34 +552,77 @@
             <option value="Online">Online</option>
           </select>
         </div>
-        <div class="field hidden" id="chequeNumberWrap"><label for="chequeNumberInput">Cheque Number *</label><input id="chequeNumberInput" type="text" /></div>
-        <div class="field hidden" id="chequeDateWrap"><label for="chequeDateInput">Cheque Date *</label><input id="chequeDateInput" type="date" /></div>
-        <div class="field hidden" id="chequePostDatedWrap"><label class="checkbox-row"><input id="chequePostDatedInput" type="checkbox" /> This cheque is post-dated</label></div>
-        <div class="field hidden" id="onlineReferenceWrap"><label for="onlineReferenceInput">Online Reference Number *</label><input id="onlineReferenceInput" type="text" /></div>
-        <div class="field hidden" id="onlinePlatformWrap"><label for="onlinePlatformInput">Platform / Bank Name *</label><input id="onlinePlatformInput" type="text" /></div>
-        <div class="field hidden" id="cashBankAccountWrap"><label for="cashBankAccountInput">Deposit Bank Account Number *</label><input id="cashBankAccountInput" type="text" /></div>
+
+        <div class="field hidden" id="chequeNumberWrap">
+          <label for="chequeNumberInput">Cheque Number *</label>
+          <input id="chequeNumberInput" type="text" />
+        </div>
+
+        <div class="field hidden" id="chequeDateWrap">
+          <label for="chequeDateInput">Cheque Date *</label>
+          <input id="chequeDateInput" type="date" />
+        </div>
+
+        <div class="field hidden" id="chequePostDatedWrap">
+          <label class="checkbox-row">
+            <input id="chequePostDatedInput" type="checkbox" />
+            This cheque is post-dated
+          </label>
+        </div>
+
+        <div class="field hidden" id="onlineReferenceWrap">
+          <label for="onlineReferenceInput">Online Reference Number *</label>
+          <input id="onlineReferenceInput" type="text" />
+        </div>
+
+        <div class="field hidden" id="onlinePlatformWrap">
+          <label for="onlinePlatformInput">Platform / Bank Name *</label>
+          <input id="onlinePlatformInput" type="text" />
+        </div>
+
+        <div class="field hidden" id="cashBankAccountWrap">
+          <label for="cashBankAccountInput">Deposit Bank Account Number *</label>
+          <input id="cashBankAccountInput" type="text" />
+        </div>
+
         <div id="paymentReviewBox" class="info-box"></div>
       </div>
-      <div class="modal-footer"><button id="savePaymentBtn" class="btn btn-primary" type="button">Finish Payment</button></div>
+
+      <div class="modal-footer">
+        <button id="savePaymentBtn" class="btn btn-primary" type="button">Finish Payment</button>
+      </div>
     </div>
   </div>
 
   <!-- CHANGE PASSWORD -->
   <div id="changePasswordModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3 id="changePasswordTitle">Change Password</h3></div>
-      <div class="form-grid one-col">
-        <div class="field"><label for="newOwnPassword">New Password *</label><input id="newOwnPassword" type="password" /></div>
-        <div class="field"><label for="confirmOwnPassword">Confirm Password *</label><input id="confirmOwnPassword" type="password" /></div>
+      <div class="modal-header">
+        <h3 id="changePasswordTitle">Change Password</h3>
       </div>
-      <div class="modal-footer"><button id="saveOwnPasswordBtn" class="btn btn-primary" type="button">Save New Password</button></div>
+      <div class="form-grid one-col">
+        <div class="field">
+          <label for="newOwnPassword">New Password *</label>
+          <input id="newOwnPassword" type="password" />
+        </div>
+        <div class="field">
+          <label for="confirmOwnPassword">Confirm Password *</label>
+          <input id="confirmOwnPassword" type="password" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveOwnPasswordBtn" class="btn btn-primary" type="button">Save New Password</button>
+      </div>
     </div>
   </div>
 
   <!-- TBV REQUEST -->
   <div id="tbvModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>Request TBV</h3><button id="closeTbvModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Request TBV</h3>
+        <button id="closeTbvModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div class="form-grid one-col">
         <div id="tbvInvoiceInfo" class="info-box"></div>
         <div class="field">
@@ -480,14 +630,19 @@
           <textarea id="tbvExplanationInput" rows="5" placeholder="Why should this invoice be voided?"></textarea>
         </div>
       </div>
-      <div class="modal-footer"><button id="saveTbvBtn" class="btn btn-primary" type="button">Save TBV Request</button></div>
+      <div class="modal-footer">
+        <button id="saveTbvBtn" class="btn btn-primary" type="button">Save TBV Request</button>
+      </div>
     </div>
   </div>
 
   <!-- TBV DECISION -->
   <div id="tbvDecisionModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>TBV Decision</h3><button id="closeTbvDecisionModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>TBV Decision</h3>
+        <button id="closeTbvDecisionModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div class="form-grid one-col">
         <div id="tbvDecisionInfo" class="info-box"></div>
         <div class="field">
@@ -505,7 +660,10 @@
   <!-- SOA -->
   <div id="soaModal" class="modal">
     <div class="modal-content medium-modal">
-      <div class="modal-header"><h3>Create Statement of Account</h3><button id="closeSoaModalBtn" class="icon-btn" type="button">&times;</button></div>
+      <div class="modal-header">
+        <h3>Create Statement of Account</h3>
+        <button id="closeSoaModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
       <div class="form-grid one-col">
         <div class="field">
           <label for="soaPreparedBy">Prepared By *</label>

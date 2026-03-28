@@ -353,6 +353,7 @@ async function login() {
     const password = el.loginPassword.value;
 
     if (!email || !password) {
+      el.loginMessage.textContent = "Please enter your email and password.";
       alert("Please enter your email and password.");
       return;
     }
@@ -402,7 +403,8 @@ async function login() {
     }
   } catch (err) {
     console.error(err);
-    alert("UNEXPECTED ERROR: " + err.message);
+    el.loginMessage.textContent = err.message || "Unexpected error.";
+    alert("UNEXPECTED ERROR: " + (err.message || "Unknown error"));
   }
 }
 async function logout() {

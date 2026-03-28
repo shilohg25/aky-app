@@ -1318,7 +1318,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     customer.payments.slice().sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date))).forEach((payment) => {
       const appliedTo = payment.allocations.map((alloc) => {
         const invoice = state.invoices.find((inv) => inv.id === alloc.invoice_id);
-        return `${invoice ? invoice.invoice_number : "Deleted Invoice"} (${formatPeso(alloc.amount)})`;
+        return `${invoice ? invoice.invoice_number : "Deleted Invoice"} (${formatPeso(alloc.allocated_amount ?? alloc.amount ?? 0)})`;
       }).join(", ");
       const details = formatPaymentDetails(payment);
       const row = document.createElement("tr");

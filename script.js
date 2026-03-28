@@ -266,7 +266,7 @@ alert("SCRIPT LOADED");
     window.currentProfile = profile;
     state.currentUserId = session.user.id;
     saveState();
-    showApp();
+    
   }
 
   async function loadCustomersFromSupabase() {
@@ -448,7 +448,7 @@ async function login() {
     el.loginMessage.textContent = "";
     el.loginPassword.value = "";
 
-    showApp();
+  
 
     if (profile.must_change_password) {
       openChangePasswordModal(true);
@@ -537,10 +537,12 @@ async function showApp() {
   el.appShell.classList.remove("hidden");
 
   renderCurrentUser();
+
   await loadCustomersFromSupabase();
 
   if (selectedCustomerId) {
     await loadSelectedCustomerDetails();
+    await loadInvoicesForSelectedCustomer();
   }
 
   renderCurrentCustomerDashboard();
@@ -768,6 +770,50 @@ async function showApp() {
     editingCustomerId = null;
     await loadCustomersFromSupabase();
     await loadSelectedCustomerDetails();
+    async function loadInvoicesForSelectedCustomer() {
+  if (!selectedCustomerId) return;
+
+  const customer = state.customers.find((c) => c.id === selectedCustomerId);
+  if (!customer) return;
+
+  const { data, error } = await supabaseClient
+    .from("invoices")
+    .select("*")
+    .eq("customer_id", selectedCustomerId)
+    .order("invoice_date", { ascending: false });
+
+  if (error) {
+    alert("Load invoices failed: " + error.message);
+    return;
+  }
+
+  customer.invoices = (data || []).map((invoice) => ({
+    id: invoice.id,
+    number: invoice.invoice_number,
+    date: invoice.invoice_date,
+    po: invoice.po_number || "",
+    reference: invoice.reference_info || "",
+    items: [],
+    total: Number(invoice.total_amount || 0),
+    paidAmount: Number(invoice.paid_amount || 0),
+    balance: Number(invoice.balance_amount || 0),
+    status:
+      invoice.primary_status === "PAID"
+        ? "Paid"
+        : invoice.primary_status === "PARTIALLY_PAID"
+        ? "Partially Paid"
+        : "Unpaid",
+    notice:
+      invoice.payment_notice_status === "POST_DATED"
+        ? "Post-Dated Cheque"
+        : invoice.payment_notice_status === "PENDING_CHEQUE_CLEARANCE"
+        ? "Pending Cheque Clearance"
+        : "None",
+    chequeFollowUpDate: "",
+    createdAt: invoice.created_at,
+    updatedAt: invoice.updated_at
+  }));
+}
     renderCurrentCustomerDashboard();
     alert("Customer saved successfully.");
   } catch (err) {
@@ -809,6 +855,7 @@ async function showApp() {
       button.addEventListener("click", async () => {
   selectedCustomerId = customer.id;
   await loadSelectedCustomerDetails();
+  await loadInvoicesForSelectedCustomer();
   renderCustomerList();
   renderCurrentCustomerDashboard();
   setView("customers");

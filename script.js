@@ -311,14 +311,40 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   function canAccessExecutive() { return hasRole("owner", "co-owner"); }
   function canAccessLogs() { return hasRole("owner", "admin", "co-owner"); }
 
-  async function login() {
-  const email = document.getElementById("loginUsername").value.trim();
-  const password = document.getElementById("loginPassword").value;
+async function login() {
+  const email = el.loginUsername.value.trim();
+  const password = el.loginPassword.value;
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({
     email,
     password
   });
+
+  if (error) {
+    el.loginMessage.textContent = error.message;
+    return;
+  }
+
+  const user = data.user;
+
+  const { data: profile, error: profileError } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    el.loginMessage.textContent = "Profile not found.";
+    return;
+  }
+
+  window.currentProfile = profile;
+
+  el.loginMessage.textContent = "";
+  el.loginPassword.value = "";
+  el.loginScreen.classList.add("hidden");
+  el.appShell.classList.remove("hidden");
+});
 
   if (error) {
     alert(error.message);

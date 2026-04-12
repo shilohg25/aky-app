@@ -1,7 +1,7 @@
 (function () {
   const config = {
-    SUPABASE_URL: "https://hghssblwbezmyrrfthri.supabase.co",
-    SUPABASE_ANON_KEY: "sb_publishable_IL6vSMDa-G1kpWCMR0KKXA_9NtUYIMr"
+    SUPABASE_URL: "https://pnadtkjdybaalnaqotiu.supabase.co",
+    SUPABASE_ANON_KEY: "sb_publishable_lnGONrjUkuM00sgdNTS7aQ_lSxolPAd"
   };
 
   window.APP_CONFIG = config;

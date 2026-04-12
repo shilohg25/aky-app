@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AKY</title>
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="aky-brand login-brand">
+  <img src="assets/logo.png" alt="AKY logo" class="aky-logo-img" />
+</div>
+      <h2>Sign in</h2>
+      <p class="muted">Use your assigned email and password.</p>
+
+      <div class="form-grid one-col">
+        <div class="field">
+          <label for="loginUsername">Email</label>
+          <input id="loginUsername" type="text" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" />
+        </div>
+      </div>
+
+      <button id="loginBtn" class="btn btn-primary wide-btn">Login</button>
+      <div id="loginMessage" class="message"></div>
+
+      <div class="login-help">
+        <strong>Role summary</strong><br />
+        Owner = full control + account management<br />
+        Co-Owner = full visibility, no edits<br />
+        Admin = create/edit operational data, no delete, note required for edits<br />
+        User = basic access, data entry, reports, and statement of account
+      </div>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="aky-brand">
+  <img src="assets/logo.png" alt="AKY logo" class="aky-logo-img" />
+</div>
+
+      <div class="panel user-panel">
+        <div id="currentUserInfo" class="current-user"></div>
+      </div>
+
+      <div class="panel nav-panel">
+        <button id="navCustomers" class="btn nav-btn active">Customers</button>
+<button id="navExecutive" class="btn nav-btn executive-access hidden">Executive View</button>
+<button id="navNotifications" class="btn nav-btn notification-access hidden">Notifications</button>
+<button id="navChequeRegister" class="btn nav-btn">Cheque Register</button>
+<button id="navReports" class="btn nav-btn">Reports</button>
+<button id="navLogs" class="btn nav-btn log-access hidden">Log History</button>
+<button id="navAccounts" class="btn nav-btn owner-access hidden">Accounts</button>
+        <button id="openChangePasswordBtn" class="btn btn-light wide-btn">Change Password</button>
+        <button id="logoutBtn" class="btn btn-danger wide-btn">Logout</button>
+      </div>
+
+<div class="panel customer-panel">
+  <div class="panel-row">
+    <h3 class="panel-title">Customers</h3>
+    <button id="openCustomerModalBtn" class="btn btn-primary small-btn">Add Customer</button>
+  </div>
+
+  <div class="search-box customer-search-box">
+    <input id="customerSearch" type="text" placeholder="Search customer" />
+    <div class="search-actions">
+      <button id="customerSearchBtn" class="btn btn-secondary">Search</button>
+      <button id="customerClearSearchBtn" class="btn btn-light">Clear</button>
+    </div>
+  </div>
+
+  <div id="customerList" class="customer-list"></div>
+</div>
+    </aside>
+
+    <main class="main-content">
+      <section id="customersView" class="view-section">
+        <div id="welcomePanel" class="panel welcome-panel">
+          <h2>Welcome to AKY</h2>
+          <p>Select a customer from the left or add a new customer to begin.</p>
+        </div>
+
+        <div id="customerDashboard" class="hidden">
+          <div class="panel customer-header-panel">
+            <div class="dashboard-head-row">
+              <div>
+                <h2 id="customerTitle">Customer</h2>
+                <div id="customerMeta" class="muted"></div>
+              </div>
+
+              <div class="dashboard-actions">
+                <button id="createInvoiceBtn" class="btn btn-primary invoice-create-access hidden">Create Invoice</button>
+                <button id="makePaymentBtn" class="btn btn-secondary payment-create-access hidden">Make Payment</button>
+                <button id="createSOABtn" class="btn btn-light">Create Statement of Account</button>
+                <button id="editCustomerBtn" class="btn btn-light customer-edit-access hidden">Edit Customer</button>
+                <button id="deleteCustomerBtn" class="btn btn-danger owner-access hidden">Delete Customer</button>
+              </div>
+            </div>
+            <div id="overdueAlertBox" class="alert-box hidden"></div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="panel summary-card"><span class="summary-label">Total Invoiced</span><strong id="sumInvoiced">₱0</strong></div>
+            <div class="panel summary-card"><span class="summary-label">Collected</span><strong id="sumCollected">₱0</strong></div>
+            <div class="panel summary-card"><span class="summary-label">Outstanding</span><strong id="sumOutstanding">₱0</strong></div>
+            <div class="panel summary-card"><span class="summary-label">Overdue 90+ Days</span><strong id="sumOverdue">0</strong></div>
+          </div>
+
+          <div class="panel">
+            <h3 class="panel-title">Customer Contacts</h3>
+            <div id="customerContacts" class="customer-contacts-layout"></div>
+          </div>
+
+          <div class="panel">
+            <div class="table-header">
+              <h3 class="panel-title">Invoices</h3>
+            </div>
+            <div class="table-wrap customer-table-scroll">
+              <table class="records-table">
+                <thead>
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th>PO #</th>
+                    <th>Reference</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>TBV</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="invoiceTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="table-header">
+              <h3 class="panel-title">Payments</h3>
+            </div>
+            <div class="table-wrap customer-table-scroll">
+              <table class="records-table">
+                <thead>
+  <tr>
+    <th>Date</th>
+    <th>Type</th>
+    <th>Method</th>
+    <th>Details</th>
+    <th>Gross Amount</th>
+    <th>Applied To</th>
+    <th>Created By</th>
+    <th>Action</th>
+  </tr>
+</thead>
+                <tbody id="paymentTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+                    <div class="panel">
+            <div class="panel-row">
+              <div>
+                <h3 class="panel-title">Document Vault</h3>
+                <p id="docVaultCustomerHint" class="muted">Select a customer to view or save supporting documents.</p>
+              </div>
+            </div>
+
+            <div id="docVaultUploader" class="panel soft-panel hidden mb-16">
+              <div class="panel-row">
+                <h4 class="panel-title small-title">Save Document</h4>
+                <label class="doc-upload-btn">
+                  <input id="customerDocumentFileInput" type="file" accept="image/*" hidden />
+                  Choose image
+                </label>
+              </div>
+
+              <div class="form-grid two-col">
+                <div class="field">
+                  <label for="customerDocumentCategory">Category *</label>
+                  <select id="customerDocumentCategory">
+                    <option value="invoice">Invoice</option>
+                    <option value="payment_proof">Payment Proof</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="customerDocumentReference">Reference Code</label>
+                  <input id="customerDocumentReference" type="text" placeholder="Invoice #, cheque #, OR number, etc." />
+                </div>
+
+                <div class="field">
+                  <label for="customerDocumentTitle">Title</label>
+                  <input id="customerDocumentTitle" type="text" placeholder="Optional short title" />
+                </div>
+
+                <div class="field">
+                  <label for="customerDocumentNotes">Notes</label>
+                  <textarea id="customerDocumentNotes" rows="3" placeholder="Optional investigation note"></textarea>
+                </div>
+              </div>
+
+              <div id="customerDocumentPasteZone" class="doc-paste-zone" tabindex="0">
+                Click here, then press Ctrl + V to paste a screenshot or snippet.
+              </div>
+
+              <div id="customerDocumentPreviewWrap" class="doc-preview-wrap hidden">
+                <img id="customerDocumentPreviewImg" class="doc-preview-img" alt="Document preview" />
+              </div>
+
+              <div class="btn-row mt-12">
+                <button id="saveCustomerDocumentBtn" class="btn btn-primary" type="button">Save Document</button>
+                <button id="clearCustomerDocumentBtn" class="btn btn-light" type="button">Clear</button>
+              </div>
+
+              <div id="customerDocumentStatus" class="info-box mt-12">
+                Choose an image or paste a screenshot. Max 6MB.
+              </div>
+            </div>
+
+            <div class="table-wrap customer-table-scroll">
+              <table class="records-table">
+                <thead>
+                  <tr>
+                    <th>Uploaded</th>
+                    <th>Category</th>
+                    <th>Title</th>
+                    <th>Reference</th>
+                    <th>Source</th>
+                    <th>Size</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="customerDocumentsTableBody">
+                  <tr><td colspan="7" class="muted">Select a customer first.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="executiveView" class="view-section hidden">
+        <div class="panel">
+          <div class="panel-row">
+            <h2 class="panel-title">Executive View</h2>
+            <div class="exec-filters">
+              <input id="execDateFrom" type="date" />
+              <input id="execDateTo" type="date" />
+              <button id="applyExecFilterBtn" class="btn btn-primary">Apply</button>
+              <button id="clearExecFilterBtn" class="btn btn-light">Clear</button>
+            </div>
+          </div>
+          <p class="muted">Visible to owner and co-owner only.</p>
+        </div>
+
+        <div class="summary-grid exec-grid">
+          <div class="panel summary-card"><span class="summary-label">Customers</span><strong id="execCustomers">0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Invoices</span><strong id="execInvoices">0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Invoiced</span><strong id="execInvoiced">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Collected</span><strong id="execCollected">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Outstanding</span><strong id="execOutstanding">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">90+ Overdue</span><strong id="execOverdue">0</strong></div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">Aging / Follow-up</h3>
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Date</th>
+                  <th>Days Open</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>TBV</th>
+                </tr>
+              </thead>
+              <tbody id="agingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="notificationsView" class="view-section hidden">
+        <div class="panel">
+          <h2 class="panel-title">Notifications</h2>
+          <p class="muted">Owner and co-owner can see 90+ overdue invoices and TBV requests. Only owner can approve or deny TBV.</p>
+        </div>
+
+                <div class="panel">
+          <div class="panel-row">
+            <div>
+              <h3 class="panel-title">TBV Requests</h3>
+              <p class="muted">Filter, search, print, or download the TBV table below for tracking.</p>
+            </div>
+            <div class="btn-row">
+              <button id="downloadTbvReportBtn" class="btn btn-primary" type="button">Download CSV</button>
+              <button id="printTbvReportBtn" class="btn btn-light" type="button">Print</button>
+            </div>
+          </div>
+
+          <div class="form-grid two-col mt-14">
+            <div class="field">
+              <label for="notificationTbvStatusFilter">TBV Status</label>
+              <select id="notificationTbvStatusFilter">
+                <option value="">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="DENIED">Denied</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="notificationTbvInvoiceSearch">Invoice # Search</label>
+              <input id="notificationTbvInvoiceSearch" type="text" placeholder="Type invoice number" />
+            </div>
+          </div>
+
+          <div class="table-wrap notifications-table-scroll">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Date Requested</th>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Invoice Status</th>
+                  <th>Requested By</th>
+                  <th>Explanation</th>
+                  <th>TBV Status</th>
+                  <th>Decision Date</th>
+                  <th>Decided By</th>
+                  <th>Decision Notes</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="tbvTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">Invoices Over 90 Days</h3>
+          <div class="table-wrap notifications-table-scroll">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Date</th>
+                  <th>Days Open</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody id="notificationsOverdueBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+<section id="chequeRegisterView" class="view-section hidden">
+  <div class="panel">
+    <div class="panel-row">
+      <div>
+        <h2 class="panel-title">Cheque Register</h2>
+        <p class="muted">Visible to all roles. Admin and owner will be able to process cheque status here.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="table-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>Payment Date</th>
+            <th>Customer</th>
+            <th>Cheque #</th>
+            <th>Cheque Date</th>
+            <th>Amount</th>
+            <th>Applied To</th>
+            <th>Status</th>
+            <th>Created By</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="chequeRegisterTableBody">
+          <tr><td colspan="9" class="muted">Cheque Register setup complete. Rendering comes next.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+      <section id="reportsView" class="view-section hidden">
+        <div class="panel">
+          <div class="panel-row">
+            <h2 class="panel-title">Reports</h2>
+            <div class="btn-row">
+              <button id="downloadReportBtn" class="btn btn-primary">Download CSV</button>
+              <button id="printReportBtn" class="btn btn-light">Print</button>
+            </div>
+          </div>
+          <p class="muted">All roles can filter, download, and print these reports.</p>
+        </div>
+
+        <div class="panel">
+          <div class="form-grid report-grid">
+            <div class="field">
+              <label for="reportCustomerFilter">Customer</label>
+              <select id="reportCustomerFilter"></select>
+            </div>
+            <div class="field">
+              <label for="reportInvoiceDateFrom">Invoice Date From</label>
+              <input id="reportInvoiceDateFrom" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportInvoiceDateTo">Invoice Date To</label>
+              <input id="reportInvoiceDateTo" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportPaidDateFrom">Paid Date From</label>
+              <input id="reportPaidDateFrom" type="date" />
+            </div>
+            <div class="field">
+              <label for="reportPaidDateTo">Paid Date To</label>
+              <input id="reportPaidDateTo" type="date" />
+            </div>
+                        <div class="field">
+              <label for="reportStatusFilter">Invoice Status</label>
+              <select id="reportStatusFilter">
+                <option value="">All</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partially Paid">Partially Paid</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="reportInvoiceNumberSort">Invoice # Sort</label>
+              <select id="reportInvoiceNumberSort">
+                <option value="date_desc">Default (Invoice Date: Newest First)</option>
+                <option value="invoice_asc">Invoice #: Ascending</option>
+                <option value="invoice_desc">Invoice #: Descending</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="btn-row report-actions">
+            <button id="applyReportFilterBtn" class="btn btn-primary">Apply Filters</button>
+            <button id="clearReportFilterBtn" class="btn btn-light">Clear</button>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="panel summary-card"><span class="summary-label">Invoices in Result</span><strong id="reportInvoicesCount">0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Total Invoiced</span><strong id="reportTotalInvoiced">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Total Paid</span><strong id="reportTotalPaid">₱0</strong></div>
+          <div class="panel summary-card"><span class="summary-label">Outstanding</span><strong id="reportTotalOutstanding">₱0</strong></div>
+        </div>
+
+        <div class="panel">
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Invoice #</th>
+                  <th>Invoice Date</th>
+                  <th>PO #</th>
+                  <th>Reference</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>Latest Paid Date</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="logView" class="view-section hidden">
+        <div class="panel">
+          <h2 class="panel-title">Log History</h2>
+          <p class="muted">Visible to owner, admin, and co-owner.</p>
+        </div>
+        <div class="panel">
+          <div class="table-wrap log-table-scroll">
+            <table class="records-table">
+             <thead>
+  <tr>
+    <th class="sortable-th" data-sort="created_at">Date/Time <span id="logSort-created_at" class="sort-indicator"></span></th>
+    <th class="sortable-th" data-sort="username">User <span id="logSort-username" class="sort-indicator"></span></th>
+    <th class="sortable-th" data-sort="role">Role <span id="logSort-role" class="sort-indicator"></span></th>
+    <th class="sortable-th" data-sort="action">Action <span id="logSort-action" class="sort-indicator"></span></th>
+    <th class="sortable-th" data-sort="entity">Entity <span id="logSort-entity" class="sort-indicator"></span></th>
+    <th>Details</th>
+    <th>Explanation</th>
+  </tr>
+</thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="accountsView" class="view-section hidden">
+        <div class="panel">
+          <div class="panel-row">
+            <div>
+              <h2 class="panel-title">Accounts</h2>
+              <p class="muted">Owner only. Create users, assign roles, reset passwords, update profile info, and delete accounts.</p>
+            </div>
+            <div class="btn-row">
+              <button id="refreshAccountsBtn" class="btn btn-light">Refresh</button>
+              <button id="openAccountModalBtn" class="btn btn-primary">Create Account</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="form-grid report-grid">
+            <div class="field">
+              <label for="accountSearch">Search account</label>
+              <input id="accountSearch" type="text" placeholder="Name, email, or role" />
+            </div>
+            <div class="field">
+              <label for="accountRoleFilter">Role</label>
+              <select id="accountRoleFilter">
+                <option value="">All Roles</option>
+                <option value="owner">Owner</option>
+                <option value="co-owner">Co-Owner</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button id="applyAccountFilterBtn" class="btn btn-primary wide-btn">Apply Filters</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="table-wrap">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Must Change Password</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="accountsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="customerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="customerModalTitle">Add Customer</h3>
+        <button id="closeCustomerModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+
+      <div id="customerEditNoteWrap" class="field hidden">
+        <label for="customerEditRequiredNote">Edit Note</label>
+        <textarea id="customerEditRequiredNote" rows="3" placeholder="Admin: required. Owner: optional. Explain what changed and why."></textarea>
+      </div>
+
+      <div class="form-grid two-col">
+        <div class="field">
+          <label for="customerFormName">Customer Name *</label>
+          <input id="customerFormName" type="text" />
+        </div>
+        <div class="field">
+          <label for="customerFormPhone">Phone Number *</label>
+          <input id="customerFormPhone" type="text" />
+        </div>
+        <div class="field">
+          <label for="customerFormEmail">Email</label>
+          <input id="customerFormEmail" type="email" />
+        </div>
+      </div>
+<div id="customerDiscountSettingsWrap" class="panel soft-panel hidden">
+  <div class="panel-row">
+    <h4 class="panel-title small-title">Discount Authorization</h4>
+    <label class="checkbox-row">
+      <input id="customerDiscountAuthorizedInput" type="checkbox" />
+      Allow invoice discounts for this customer
+    </label>
+  </div>
+
+  <div id="customerDiscountConfigFields" class="form-grid one-col hidden mt-12">
+    <div class="field">
+      <label for="customerDiscountMaxAmountInput">Max Discount Per Invoice *</label>
+      <input id="customerDiscountMaxAmountInput" type="number" min="0" step="0.01" />
+    </div>
+
+    <div class="field">
+      <label for="customerDiscountNoteInput">Discount Rule / Note</label>
+      <textarea
+        id="customerDiscountNoteInput"
+        rows="3"
+        placeholder="Optional owner note, e.g. Promo support only / Up to ₱500 per invoice."
+      ></textarea>
+    </div>
+  </div>
+
+  <div id="customerDiscountHelpText" class="info-box mt-12">
+    Owner-only control. If enabled, max discount per invoice is required.
+  </div>
+</div>
+      <div class="panel soft-panel">
+        <div class="panel-row">
+          <h4 class="panel-title small-title">Additional Contacts</h4>
+          <button id="addContactBtn" class="btn btn-secondary" type="button">Add Contact</button>
+        </div>
+        <div id="additionalContacts"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="saveCustomerBtn" class="btn btn-primary" type="button">Save Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="invoiceModal" class="modal">
+    <div class="modal-content large-modal">
+      <div class="modal-header">
+        <h3 id="invoiceModalTitle">Create Invoice</h3>
+        <button id="closeInvoiceModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+
+      <div id="editNoteWrap" class="field hidden">
+        <label for="editRequiredNote">Edit Note</label>
+        <textarea id="editRequiredNote" rows="3" placeholder="Admin: required. Owner: optional. Explain what changed and why."></textarea>
+      </div>
+
+      <div class="form-grid two-col">
+        <div class="field">
+          <label for="invoiceNumber">Invoice Number *</label>
+          <input id="invoiceNumber" type="text" />
+        </div>
+        <div class="field">
+          <label for="invoiceDate">Date *</label>
+          <input id="invoiceDate" type="date" />
+        </div>
+        <div class="field">
+          <label for="poNumber">PO #</label>
+          <input id="poNumber" type="text" />
+        </div>
+        <div class="field">
+          <label for="referenceInfo">Reference Info</label>
+          <input id="referenceInfo" type="text" />
+        </div>
+      </div>
+      <div class="panel soft-panel ai-assist-panel owner-access hidden">
+  <div class="panel-row">
+    <h4 class="panel-title small-title">AI Invoice Assist</h4>
+    <label class="ai-upload-btn">
+      <input id="invoiceAiFileInput" type="file" accept="image/*" hidden />
+      Choose image
+    </label>
+  </div>
+
+  <div id="invoiceAiPasteZone" class="ai-paste-zone" tabindex="0">
+    Click here, then press Ctrl + V to paste an invoice screenshot or snippet.
+  </div>
+
+  <div class="btn-row mt-12">
+    <button id="invoiceAiAnalyzeBtn" class="btn btn-secondary" type="button">Analyze with AI</button>
+    <button id="invoiceAiClearBtn" class="btn btn-light" type="button">Clear</button>
+  </div>
+
+  <div id="invoiceAiPreviewWrap" class="ai-preview-wrap hidden">
+    <img id="invoiceAiPreviewImg" class="ai-preview-img" alt="Invoice preview" />
+  </div>
+
+  <div id="invoiceAiStatus" class="info-box mt-12">
+    Nothing uploaded yet.
+  </div>
+</div>
+      <div class="panel soft-panel">
+  <div class="panel-row">
+    <h4 class="panel-title small-title">Invoice Document</h4>
+  </div>
+
+  <div class="form-grid one-col mt-12">
+    <div class="field">
+      <label for="invoiceDocumentFileInput">Upload Invoice Image</label>
+      <input id="invoiceDocumentFileInput" type="file" accept="image/*" />
+    </div>
+
+    <div class="field">
+      <label for="invoiceDocumentNotes">Notes</label>
+      <textarea id="invoiceDocumentNotes" rows="2" placeholder="Optional short note"></textarea>
+    </div>
+  </div>
+
+  <div id="invoiceDocumentPreviewWrap" class="doc-preview-wrap hidden">
+    <img id="invoiceDocumentPreviewImg" class="doc-preview-img" alt="Invoice document preview" />
+  </div>
+
+  <div class="btn-row mt-12">
+    <button id="clearInvoiceDocumentBtn" class="btn btn-light" type="button">Remove Document</button>
+  </div>
+
+  <div id="invoiceDocumentStatus" class="info-box mt-12">
+    Optional. Upload an image. It will be saved to Document Vault using the invoice number after the invoice is saved.
+  </div>
+</div>
+<div id="invoiceDiscountWrap" class="panel soft-panel hidden">
+  <div class="panel-row">
+    <h4 class="panel-title small-title">Invoice Discount</h4>
+    <label class="checkbox-row">
+      <input id="invoiceDiscountEnabled" type="checkbox" />
+      Apply Discount
+    </label>
+  </div>
+
+  <div id="invoiceDiscountControls" class="form-grid two-col hidden mt-12">
+    <div class="field">
+      <label for="invoiceDiscountMode">Discount Mode</label>
+      <select id="invoiceDiscountMode">
+        <option value="per_qty">Per Quantity</option>
+        <option value="fixed">Fixed Invoice Amount</option>
+      </select>
+    </div>
+
+    <div id="invoiceDiscountFixedWrap" class="field hidden">
+      <label for="invoiceDiscountFixedAmount">Fixed Discount Amount</label>
+      <input id="invoiceDiscountFixedAmount" type="number" min="0" step="0.01" />
+    </div>
+
+    <div id="invoiceDiscountReasonWrap" class="field grid-span-full">
+      <label for="invoiceDiscountReason">Discount Reason *</label>
+      <textarea
+        id="invoiceDiscountReason"
+        rows="3"
+        placeholder="Example: Promo support / Customer retention / Authorized commercial adjustment"
+      ></textarea>
+    </div>
+  </div>
+
+  <div id="invoiceDiscountSummary" class="info-box mt-12"></div>
+</div>
+      <div class="panel soft-panel">
+        <div class="panel-row">
+          <h4 class="panel-title small-title">Line Items</h4>
+          <button id="addLineBtn" class="btn btn-secondary" type="button">Add Line</button>
+        </div>
+        <div class="line-items-labels">
+  <span>Product Name</span>
+  <span>Quantity</span>
+  <span>Price</span>
+  <span id="lineDiscountHeader" class="hidden-slot">Discount / Qty</span>
+  <span>Line Total</span>
+  <span></span>
+</div>
+        <div id="lineItemsContainer"></div>
+      </div>
+
+      <div class="modal-footer between">
+        <div class="total-box">Total: <strong id="invoiceTotalAmount">₱0</strong></div>
+        <button id="saveInvoiceBtn" class="btn btn-primary" type="button">Save Invoice</button>
+      </div>
+    </div>
+  </div>
+
+ <div id="invoiceViewModal" class="modal">
+  <div class="modal-content large-modal">
+    <div class="modal-header">
+      <h3>Invoice Details</h3>
+      <button id="closeInvoiceViewModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+    <div id="invoiceViewContent"></div>
+  </div>
+</div>
+
+<div id="paymentViewModal" class="modal">
+  <div class="modal-content large-modal">
+    <div class="modal-header">
+      <h3>Payment Details</h3>
+      <button id="closePaymentViewModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+    <div id="paymentViewContent"></div>
+  </div>
+</div>
+
+<div id="paymentTypeModal" class="modal">
+  <div class="modal-content medium-modal">
+    <div class="modal-header">
+      <h3>Make Payment</h3>
+      <button id="closePaymentTypeModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+    <div class="payment-choice-grid">
+      <button id="payByInvoiceBtn" class="payment-choice-btn" type="button">
+        <strong>Pay by Invoice</strong>
+        <span>Choose one or more open invoices and pay their current balances.</span>
+      </button>
+      <button id="partialPaymentBtn" class="payment-choice-btn" type="button">
+        <strong>Allocate Payment</strong>
+        <span>Enter one payment amount and auto-allocate it to open invoices oldest first.</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="invoiceSelectionModal" class="modal">
+  <div class="modal-content large-modal">
+    <div class="modal-header">
+      <h3>Pay by Invoice</h3>
+      <button id="closeInvoiceSelectionModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+    <div id="invoiceSelectionList" class="selection-list"></div>
+    <div class="modal-footer between">
+      <div class="total-box">Selected Total: <strong id="selectedInvoicesTotal">₱0</strong></div>
+      <div class="btn-row">
+        <button id="cancelInvoiceSelectionBtn" class="btn btn-light" type="button">Cancel</button>
+        <button id="proceedInvoiceSelectionBtn" class="btn btn-primary" type="button">Proceed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="partialPaymentModal" class="modal">
+  <div class="modal-content medium-modal">
+    <div class="modal-header">
+      <h3>Allocate Payment</h3>
+      <button id="closePartialPaymentModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+
+    <div class="form-grid one-col">
+      <div id="partialInvoiceSelect" class="info-box">
+        Auto-allocation uses oldest open invoices first.
+      </div>
+
+      <div class="field">
+        <label for="partialAmountInput">Payment Amount *</label>
+        <input id="partialAmountInput" type="number" min="0" step="0.01" />
+      </div>
+
+      <div id="partialBalanceInfo" class="info-box"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="proceedPartialPaymentBtn" class="btn btn-primary" type="button">Proceed</button>
+    </div>
+  </div>
+</div>
+
+<div id="paymentMethodModal" class="modal">
+  <div class="modal-content medium-modal">
+    <div class="modal-header">
+      <h3>Payment Details</h3>
+      <button id="closePaymentMethodModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+
+    <div class="form-grid one-col">
+      <div class="field">
+        <label for="paymentMethodSelect">Payment Method *</label>
+        <select id="paymentMethodSelect">
+          <option value="">Select</option>
+          <option value="Cash">Cash</option>
+          <option value="Cheque">Cheque</option>
+          <option value="Online">Online</option>
+        </select>
+      </div>
+
+      <div class="panel soft-panel">
+        <div class="panel-row">
+          <h4 class="panel-title small-title">Payment Proof</h4>
+        </div>
+
+        <div class="form-grid one-col mt-12">
+          <div class="field">
+            <label for="paymentDocumentFileInput">Upload Payment Proof Image</label>
+            <input id="paymentDocumentFileInput" type="file" accept="image/*" />
+          </div>
+        </div>
+
+        <div id="paymentDocumentPreviewWrap" class="doc-preview-wrap hidden">
+          <img id="paymentDocumentPreviewImg" class="doc-preview-img" alt="Payment proof preview" />
+        </div>
+
+        <div class="btn-row mt-12">
+          <button id="clearPaymentDocumentBtn" class="btn btn-light" type="button">Remove Document</button>
+        </div>
+
+        <div id="paymentDocumentStatus" class="info-box mt-12">
+          Optional. Upload one payment proof image. It will be saved to Document Vault after the payment is saved.
+        </div>
+      </div>
+
+      <div class="field hidden" id="chequeNumberWrap">
+        <label for="chequeNumberInput">Cheque Number *</label>
+        <input id="chequeNumberInput" type="text" />
+      </div>
+
+      <div class="field hidden" id="chequeDateWrap">
+        <label for="chequeDateInput">Cheque Date *</label>
+        <input id="chequeDateInput" type="date" />
+      </div>
+
+      <div class="field hidden" id="chequePostDatedWrap">
+        <label class="checkbox-row">
+          <input id="chequePostDatedInput" type="checkbox" />
+          This cheque is post-dated
+        </label>
+      </div>
+
+      <div class="field hidden" id="onlineReferenceWrap">
+        <label for="onlineReferenceInput">Online Reference Number *</label>
+        <input id="onlineReferenceInput" type="text" />
+      </div>
+
+      <div class="field hidden" id="onlinePlatformWrap">
+        <label for="onlinePlatformInput">Platform / Bank Name *</label>
+        <input id="onlinePlatformInput" type="text" />
+      </div>
+
+      <div class="field hidden" id="cashBankAccountWrap">
+        <label for="cashBankAccountInput">Deposit Bank Account Number *</label>
+        <input id="cashBankAccountInput" type="text" />
+      </div>
+
+      <div id="withholdingTaxWrap" class="panel soft-panel">
+        <div class="panel-row">
+          <h4 class="panel-title small-title">Withholding Tax</h4>
+          <label class="checkbox-row">
+            <input id="withholdingTaxAppliedInput" type="checkbox" />
+            Apply Withholding Tax
+          </label>
+        </div>
+
+        <div id="withholdingTaxPreviewBox" class="info-box mt-12">
+          Current rate: <strong id="withholdingTaxRateLabel">1%</strong><br>
+          Formula: <strong>Gross / 1.12 × Rate</strong><br>
+          Gross settles the invoice. Net is stored for audit and reporting.
+        </div>
+      </div>
+
+      <div id="paymentReviewBox" class="info-box"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="savePaymentBtn" class="btn btn-primary" type="button">Finish Payment</button>
+    </div>
+  </div>
+</div>
+   <div id="changePasswordModal" class="modal">
+  <div class="modal-content medium-modal">
+    <div class="modal-header">
+      <h3 id="changePasswordTitle">Change Password</h3>
+            <button id="closeChangePasswordModalBtn" class="icon-btn" type="button">&times;</button>
+    </div>
+    <div class="form-grid one-col">
+      <div class="field">
+        <label for="newOwnPassword">New Password *</label>
+        <input id="newOwnPassword" type="password" />
+      </div>
+      <div class="field">
+        <label for="confirmOwnPassword">Confirm Password *</label>
+        <input id="confirmOwnPassword" type="password" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="saveOwnPasswordBtn" class="btn btn-primary" type="button">Save New Password</button>
+    </div>
+  </div>
+</div>
+
+<div id="tbvModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3>Request TBV</h3>
+        <button id="closeTbvModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+      <div class="form-grid one-col">
+        <div id="tbvInvoiceInfo" class="info-box"></div>
+        <div class="field">
+          <label for="tbvExplanationInput">Explanation *</label>
+          <textarea id="tbvExplanationInput" rows="5" placeholder="Why should this invoice be voided?"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveTbvBtn" class="btn btn-primary" type="button">Save TBV Request</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tbvDecisionModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3>TBV Decision</h3>
+        <button id="closeTbvDecisionModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+      <div class="form-grid one-col">
+        <div id="tbvDecisionInfo" class="info-box"></div>
+        <div class="field">
+          <label for="tbvDecisionNotesInput">Decision Notes</label>
+          <textarea id="tbvDecisionNotesInput" rows="4" placeholder="Optional note"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer between">
+        <button id="denyTbvBtn" class="btn btn-danger" type="button">Deny</button>
+        <button id="approveTbvBtn" class="btn btn-primary" type="button">Approve and Void</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="soaModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3>Create Statement of Account</h3>
+        <button id="closeSoaModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+<div class="form-grid one-col">
+  <div class="field">
+    <label for="soaPreparedBy">Prepared By *</label>
+    <input id="soaPreparedBy" type="text" />
+  </div>
+
+  <div class="field">
+    <label for="soaAsOfDate">As of Date *</label>
+    <input id="soaAsOfDate" type="date" />
+  </div>
+
+  <div class="field checkbox-row">
+    <input id="soaShowPayments" type="checkbox" />
+    <label for="soaShowPayments">Show previous payments</label>
+  </div>
+
+  <div id="soaPaymentRangeWrap" class="form-grid two-col">
+    <div class="field">
+      <label for="soaPaymentsFrom">Payments From</label>
+      <input id="soaPaymentsFrom" type="date" />
+    </div>
+    <div class="field">
+      <label for="soaPaymentsTo">Payments To</label>
+      <input id="soaPaymentsTo" type="date" />
+    </div>
+  </div>
+</div>
+      <div class="modal-footer">
+        <button id="generateSoaBtn" class="btn btn-primary" type="button">Generate SOA</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="accountModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3 id="accountModalTitle">Create Account</h3>
+        <button id="closeAccountModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+      <div class="form-grid one-col">
+        <div class="field">
+          <label for="accountNameInput">Full Name / Username *</label>
+          <input id="accountNameInput" type="text" />
+        </div>
+        <div class="field">
+          <label for="accountEmailInput">Email *</label>
+          <input id="accountEmailInput" type="email" />
+        </div>
+        <div class="field">
+          <label for="accountRoleInput">Role *</label>
+          <select id="accountRoleInput">
+            <option value="owner">Owner</option>
+            <option value="co-owner">Co-Owner</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+        <div class="field" id="accountPasswordWrap">
+          <label for="accountPasswordInput">Temporary Password *</label>
+          <input id="accountPasswordInput" type="password" />
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input id="accountMustChangePasswordInput" type="checkbox" checked />
+            Force password change on next login
+          </label>
+        </div>
+        <div class="info-box" id="accountModalHelpBox">
+          Owner creates the account and assigns the temporary password. The user changes it after first login.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveAccountBtn" class="btn btn-primary" type="button">Save Account</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resetPasswordModal" class="modal">
+    <div class="modal-content medium-modal">
+      <div class="modal-header">
+        <h3>Reset Password</h3>
+        <button id="closeResetPasswordModalBtn" class="icon-btn" type="button">&times;</button>
+      </div>
+      <div class="form-grid one-col">
+        <div id="resetPasswordInfo" class="info-box"></div>
+        <div class="field">
+          <label for="resetPasswordInput">New Temporary Password *</label>
+          <input id="resetPasswordInput" type="password" />
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input id="resetMustChangePasswordInput" type="checkbox" checked />
+            Force password change on next login
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveResetPasswordBtn" class="btn btn-primary" type="button">Reset Password</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/permissions.js"></script>
+<script src="js/state.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
